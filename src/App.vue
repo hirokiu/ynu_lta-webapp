@@ -1,5 +1,8 @@
 <template>
   <div id="app">
+    <div v-if="isPreview" role="status" class="alert alert-warning mb-0 text-center">
+      確認環境：本番データのコピーです。ここでの変更は本番に反映されず、移行時に置き換えられます。通知は送信されません。
+    </div>
     <nav v-if="$store.state.user.data" class="navbar navbar-expand navbar-dark bg-dark">
       <a href="/surveys" class="navbar-brand">LTA Admin Webapp</a>
       <div class="navbar-nav mr-auto">
@@ -30,6 +33,9 @@
 <script>
 export default {
   name: "app",
+  computed: {
+    isPreview() { return window.location.hostname === "dev.kirokun.alchembright.com"; }
+  },
   
 };
 </script>
