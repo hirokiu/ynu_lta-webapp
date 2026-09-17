@@ -273,7 +273,21 @@
       </table>
 
 
-      <div class="mt-4" v-if="!isGeneratingResultsDownload && !(datasetResultsCsv || datasetResultsJson)">
+      <div class="mt-4">
+        <p v-if="assignmentsError" role="alert">{{ assignmentsError }}</p>
+        <button :disabled="assignmentsLoading || assignmentPage === 1" @click="getAssignmentsOfSurvey(undefined, assignmentPage - 1)">配信一覧：前へ</button>
+        <span class="m-2">{{ assignmentPage }} ページ（個人・グループ合計で最大50件）</span>
+        <button :disabled="assignmentsLoading || !assignmentsHasMore" @click="getAssignmentsOfSurvey(undefined, assignmentPage + 1)">次へ</button>
+      </div>
+      <div class="mt-4">
+        <label>回答日時（画面の端末の時刻）：
+          <input type="date" v-model="exportFrom" :disabled="isGeneratingResultsDownload" @change="clearResultsDownloads" /> ～
+          <input type="date" v-model="exportTo" :disabled="isGeneratingResultsDownload" @change="clearResultsDownloads" />
+        </label>
+        <p>両方空欄の場合は全期間を出力します。件数が多い場合は期間を指定してください。</p>
+        <p v-if="exportError" role="alert">{{ exportError }}</p>
+      </div>
+      <div class="mt-4" v-if="!isGeneratingResultsDownload">
         <span class="m-2">
           Generate
         </span>
@@ -294,7 +308,7 @@
       <div class="mt-4" v-if="!isGeneratingResultsDownload && (datasetResultsCsv || datasetResultsJson)">
         <span class="m-2" v-if="datasetResultsCsv">
           <a 
-            v-bind:href="`data:text/csv;charset=utf-8,` + encodeURIComponent(datasetResultsCsv)"
+            v-bind:href="datasetResultsCsv"
             target="_blank" 
             v-bind:download='currentSurvey.id ? currentSurvey.id : currentSurvey.name + "_results.csv"'
             >
@@ -303,7 +317,7 @@
         </span>
         <span target="m-2" v-if="datasetResultsJson">
           <a 
-            v-bind:href="`data:text/json;charset=utf-8,` + encodeURIComponent(datasetResultsJson)"
+            v-bind:href="datasetResultsJson"
             target="_blank" 
             v-bind:download='currentSurvey.id ? currentSurvey.id : currentSurvey.name + "_results.json"'
             >
@@ -397,12 +411,14 @@ export default {
       randomizeMinutes: 0,
 
       assignments: [],
+      assignmentPage: 1, assignmentsHasMore: false, assignmentsLoading: false, assignmentsError: "", assignmentRequest: 0,
 
       isGeneratingDownload: false,
       datasetJson: null,
       datasetCsv: null,
 
       isGeneratingResultsDownload: false,
+      exportFrom: "", exportTo: "", exportError: "",
       datasetResultsJson: null,
       datasetResultsCsv: null
     };
@@ -455,14 +471,15 @@ export default {
         });
     },
 
-    getAssignmentsOfSurvey(id) {
-      AssignmentDataService.getAssignmentsOfSurvey(id)
-        .then(response => {
-          this.assignments = response.data;
-        })
-        .catch(e => {
-          console.log(e);
-        });
+    async getAssignmentsOfSurvey(id, page = 1) {
+      const request = ++this.assignmentRequest;
+      this.assignmentsLoading = true; this.assignmentsError = "";
+      try {
+        const response = await AssignmentDataService.getPage({ surveyId: id || this.$route.params.id, page, limit: 50 });
+        if (request !== this.assignmentRequest) return;
+        this.assignments = response.data.items; this.assignmentPage = page; this.assignmentsHasMore = response.data.hasMore;
+      } catch (e) { if (request === this.assignmentRequest) this.assignmentsError = "配信一覧を取得できませんでした。"; }
+      finally { if (request === this.assignmentRequest) this.assignmentsLoading = false; }
     },
 
     updatePublished(status) {
@@ -592,25 +609,35 @@ export default {
       })
     },
 
-    generateResultsCsv() {
-      this.isGeneratingResultsDownload = true
-      SurveyDataService.getResultsCsv(this.currentSurvey._id)
-        .then(apiResponse => {
-          this.datasetResultsCsv = apiResponse.data
-          this.isGeneratingResultsDownload = false
-      })
+    clearResultsDownloads() {
+      [this.datasetResultsCsv, this.datasetResultsJson].filter(Boolean).forEach(url => URL.revokeObjectURL(url));
+      this.datasetResultsCsv = null; this.datasetResultsJson = null;
     },
-
-    generateResultsJson() {
-      this.isGeneratingDoisGeneratingResultsDownloadwnload = true
-      SurveyDataService.getResultsJson(this.currentSurvey._id)
-        .then(apiResponse => {
-          this.datasetResultsJson = JSON.stringify(apiResponse.data)
-          this.isGeneratingResultsDownload = false
-      })
+    generateResultsCsv() { return this.generateResults("csv"); },
+    generateResultsJson() { return this.generateResults("json"); },
+    async generateResults(format) {
+      this.exportError = "";
+      if (!!this.exportFrom !== !!this.exportTo || (this.exportFrom && this.exportFrom > this.exportTo)) {
+        this.exportError = "開始日と終了日を正しく指定してください。"; return;
+      }
+      this.isGeneratingResultsDownload = true;
+      const params = this.exportFrom ? {
+        from: moment(this.exportFrom).startOf("day").toISOString(),
+        to: moment(this.exportTo).endOf("day").toISOString()
+      } : {};
+      try {
+        const method = format === "csv" ? "getResultsCsv" : "getResultsJson";
+        const response = await SurveyDataService[method](this.currentSurvey._id, params);
+        const key = format === "csv" ? "datasetResultsCsv" : "datasetResultsJson";
+        if (this[key]) URL.revokeObjectURL(this[key]);
+        this[key] = URL.createObjectURL(new Blob([format === "csv" ? response.data : JSON.stringify(response.data)],
+          { type: format === "csv" ? "text/csv;charset=utf-8" : "application/json" }));
+      } catch (e) { this.exportError = "出力できませんでした。期間を絞って再試行してください。"; }
+      finally { this.isGeneratingResultsDownload = false; }
     }
   },
   
+  beforeDestroy() { this.clearResultsDownloads(); },
   mounted() {
     moment.locale("en-ca");
     this.updateMessage = "";

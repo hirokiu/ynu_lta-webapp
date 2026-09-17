@@ -9,6 +9,7 @@ http.interceptors.request.use(function (config) {
 });
 
 class SurveyDataService {
+  getPage(params) { return http.get("/admin/surveys", { params }); }
   getAll() {
     return http.get("/surveys");
   }
@@ -37,12 +38,12 @@ class SurveyDataService {
     return http.get(`/surveys/${id}/datasets`);
   }
 
-  getResultsCsv(id) {
-    return http.get(`/surveys/${id}/datasets/results/csv`);
+  getResultsCsv(id, params) {
+    return http.get(`/surveys/${id}/datasets/results/csv`, { params });
   }
 
-  getResultsJson(id) {
-    return http.get(`/surveys/${id}/datasets/results/json`);
+  getResultsJson(id, params) {
+    return http.get(`/surveys/${id}/datasets/results/json`, { params });
   }
 
   assignSurvey(sid, uid) {

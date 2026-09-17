@@ -11,6 +11,13 @@
       </div>
     </div>
 
+    <p v-if="loadError" role="alert">{{ loadError }}</p>
+    <p v-if="loading">読み込み中…</p>
+    <div>
+      <button :disabled="loading || page === 1" @click="loadPage(page - 1)">前へ</button>
+      <span class="m-2">{{ page }} ページ（最大50件）</span>
+      <button :disabled="loading || !hasMore" @click="loadPage(page + 1)">次へ</button>
+    </div>
     <div class="list row mt-4">
       <div class="col-md-4">
         <table class="table table-hover">
@@ -48,7 +55,7 @@
       </div>
 
       <div class="col-md-2 ml-4">
-        <div v-if="currentSurvey._id != ''">
+        <div v-if="currentSurvey && currentSurvey._id">
           <tableDetailsHeader
             icon="file"
             :text="currentSurvey.name"
@@ -97,6 +104,7 @@ export default {
     this.emptySurvey = emptySurvey;
     return {
       surveys: [],
+      page: 1, hasMore: false, loading: false, loadError: "", requestId: 0,
       currentSurvey: emptySurvey,
       currentIndex: -1,
       name: "",
@@ -109,14 +117,17 @@ export default {
       if (!dt) return "";
       return moment(dt).calendar();
     },
-    retrieveSurveys() {
-      SurveyDataService.getAll()
-        .then(response => {
-          this.surveys = response.data;
-        })
-        .catch(e => {
-          console.log(e);
-        });
+    retrieveSurveys() { this.loadPage(1); },
+    async loadPage(page) {
+      const requestId = ++this.requestId;
+      this.loading = true; this.loadError = "";
+      try {
+        const response = await SurveyDataService.getPage({ page, limit: 50, t: this.name });
+        if (requestId !== this.requestId) return;
+        this.surveys = response.data.items; this.hasMore = response.data.hasMore; this.page = page;
+        this.currentSurvey = this.emptySurvey; this.currentIndex = -1;
+      } catch (e) { if (requestId === this.requestId) this.loadError = "取得できませんでした。再試行してください。"; }
+      finally { if (requestId === this.requestId) this.loading = false; }
     },
 
     refreshList() {
@@ -136,17 +147,7 @@ export default {
       }
     },
 
-    search() {
-      SurveyDataService.findByName(this.name)
-        .then(response => {
-          this.surveys = response.data;
-          this.setActive(this.emptySurvey);
-        })
-        .catch(e => {
-          console.log(e);
-        });
-    },
-
+    search() { this.loadPage(1); },
     goToSurvey(survey) {
       window.location.href = "/surveys/" + survey._id;
     }
