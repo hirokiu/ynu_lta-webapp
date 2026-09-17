@@ -201,6 +201,7 @@
         </tbody>
       </table>
 
+      <p v-if="downloadError" role="alert">{{ downloadError }}</p>
       <div class="mt-4" v-if="!isGeneratingDownload && !(datasetCsv || datasetJson)">
         <span class="m-2">
           Generate
@@ -213,10 +214,9 @@
         </span>
       </div>
 
-      <div class="mt-4" v-if="isGeneratingDownload">
-        <span class="m-2">
-          Generating...
-        </span>
+      <div class="mt-4 export-status" v-if="isGeneratingDownload" role="status" aria-live="polite" aria-busy="true">
+        <span class="export-spinner" aria-hidden="true"></span>
+        <span>ダウンロード用データを作成中です。このままお待ちください。</span>
       </div>
 
       <div class="mt-4" v-if="!isGeneratingDownload && (datasetCsv || datasetJson)">
@@ -284,7 +284,7 @@
           <input type="date" v-model="exportFrom" :disabled="isGeneratingResultsDownload" @change="clearResultsDownloads" /> ～
           <input type="date" v-model="exportTo" :disabled="isGeneratingResultsDownload" @change="clearResultsDownloads" />
         </label>
-        <p>両方空欄の場合は全期間を出力します。件数が多い場合は期間を指定してください。</p>
+        <p>表示中の50件に限らず、このSurveyの全員分の回答を出力します。両方空欄の場合は全期間が対象です。回答が1万件を超える場合は、期間を分けて出力してください。</p>
         <p v-if="exportError" role="alert">{{ exportError }}</p>
       </div>
       <div class="mt-4" v-if="!isGeneratingResultsDownload">
@@ -299,10 +299,9 @@
         </span>
       </div>
 
-      <div class="mt-4" v-if="isGeneratingResultsDownload">
-        <span class="m-2">
-          Generating...
-        </span>
+      <div class="mt-4 export-status" v-if="isGeneratingResultsDownload" role="status" aria-live="polite" aria-busy="true">
+        <span class="export-spinner" aria-hidden="true"></span>
+        <span>ダウンロード用データを作成中です。このままお待ちください。</span>
       </div>
 
       <div class="mt-4" v-if="!isGeneratingResultsDownload && (datasetResultsCsv || datasetResultsJson)">
@@ -414,6 +413,7 @@ export default {
       assignmentPage: 1, assignmentsHasMore: false, assignmentsLoading: false, assignmentsError: "", assignmentRequest: 0,
 
       isGeneratingDownload: false,
+      downloadError: "",
       datasetJson: null,
       datasetCsv: null,
 
@@ -591,22 +591,18 @@ export default {
       window.location.href = "/assignments/" + assignment._id;
     },
 
-    generateCsv() {
-      this.isGeneratingDownload = true
-      SurveyDataService.getCsv(this.currentSurvey._id)
-        .then(apiResponse => {
-          this.datasetCsv = apiResponse.data
-          this.isGeneratingDownload = false
-      })
-    },
-
-    generateJson() {
-      this.isGeneratingDownload = true
-      SurveyDataService.getJson(this.currentSurvey._id)
-        .then(apiResponse => {
-          this.datasetJson = JSON.stringify(apiResponse.data)
-          this.isGeneratingDownload = false
-      })
+    generateCsv() { return this.generateLegacyDownload("csv"); },
+    generateJson() { return this.generateLegacyDownload("json"); },
+    async generateLegacyDownload(format) {
+      if (this.isGeneratingDownload) return;
+      this.isGeneratingDownload = true; this.downloadError = "";
+      try {
+        const method = format === "csv" ? "getCsv" : "getJson";
+        const response = await SurveyDataService[method](this.currentSurvey._id);
+        if (format === "csv") this.datasetCsv = response.data;
+        else this.datasetJson = JSON.stringify(response.data);
+      } catch (e) { this.downloadError = "出力できませんでした。再試行してください。"; }
+      finally { this.isGeneratingDownload = false; }
     },
 
     clearResultsDownloads() {
@@ -616,6 +612,7 @@ export default {
     generateResultsCsv() { return this.generateResults("csv"); },
     generateResultsJson() { return this.generateResults("json"); },
     async generateResults(format) {
+      if (this.isGeneratingResultsDownload) return;
       this.exportError = "";
       if (!!this.exportFrom !== !!this.exportTo || (this.exportFrom && this.exportFrom > this.exportTo)) {
         this.exportError = "開始日と終了日を正しく指定してください。"; return;
@@ -651,6 +648,15 @@ export default {
 </script>
 
 <style>
+.export-status { display: flex; align-items: center; gap: 0.75rem; }
+.export-spinner {
+  display: inline-block; width: 1.5rem; height: 1.5rem; flex-shrink: 0;
+  border: 3px solid #d8dce0; border-top-color: #245b91; border-radius: 50%;
+  animation: export-spin 0.8s linear infinite;
+}
+@keyframes export-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .export-spinner { animation: none; } }
+
 .edit-form {
   max-width: 300px;
 }

@@ -25,5 +25,16 @@ function component(file, services) {
  const survey=component('Survey',{SurveyDataService:{getResultsCsv:async()=>{throw Error('offline');}}});
  survey.currentSurvey={_id:'synthetic'};survey.exportFrom='2026-01-01';await survey.generateResultsCsv();assert(survey.exportError);assert.equal(survey.isGeneratingResultsDownload,false);
  survey.exportFrom='';await survey.generateResultsCsv();assert(survey.exportError);assert.equal(survey.isGeneratingResultsDownload,false);
- console.log('UI paging race and download error tests passed');
+ const downloads=[];
+ const busy=component('Survey',{SurveyDataService:{getResultsCsv:(id,params)=>new Promise(resolve=>downloads.push({id,params,resolve})),getCsv:async()=>{throw Error('offline');}}});
+ busy.currentSurvey={_id:'whole-survey'};busy.assignmentPage=3;
+ const pending=busy.generateResultsCsv();
+ assert.equal(busy.isGeneratingResultsDownload,true);
+ await busy.generateResultsCsv();assert.equal(downloads.length,1);
+ assert.equal(downloads[0].id,'whole-survey');assert.equal(Object.keys(downloads[0].params).length,0);
+ downloads[0].resolve({data:'回答者ID\nexample'});await pending;
+ assert.equal(busy.isGeneratingResultsDownload,false);assert(busy.datasetResultsCsv.startsWith('blob:'));
+ busy.clearResultsDownloads();
+ await busy.generateCsv();assert(busy.downloadError);assert.equal(busy.isGeneratingDownload,false);
+ console.log('UI paging, full-survey export scope and busy/error state tests passed');
 })().catch(e=>{console.error(e);process.exit(1);});
