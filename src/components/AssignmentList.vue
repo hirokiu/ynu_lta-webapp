@@ -26,8 +26,13 @@
     <p v-if="loadError" role="alert">{{ loadError }}</p>
     <p v-if="loading">読み込み中…</p>
     <div>
+      <label class="mr-2">1ページの表示件数
+        <select v-model.number="pageSize" :disabled="loading" @change="loadPage(1)">
+          <option v-for="size in [10,20,50,100]" :key="size" :value="size">{{ size }}件</option>
+        </select>
+      </label>
       <button :disabled="loading || page === 1" @click="loadPage(page - 1)">前へ</button>
-      <span class="m-2">{{ page }} ページ（最大50件）</span>
+      <span class="m-2">{{ page }} ページ（最大{{ pageSize }}件）</span>
       <button :disabled="loading || !hasMore" @click="loadPage(page + 1)">次へ</button>
     </div>
     <div class="list row mt-4">
@@ -142,7 +147,7 @@ export default {
   data() {
     return {
       assignments: [],
-      page: 1, hasMore: false, loading: false, loadError: "", requestId: 0,
+      page: 1, pageSize: 50, hasMore: false, loading: false, loadError: "", requestId: 0,
       currentIndex: -1,
       currentAssignment: null,
       searchInput: "",
@@ -164,7 +169,7 @@ export default {
       const requestId = ++this.requestId;
       this.loading = true; this.loadError = "";
       try {
-        const response = await AssignmentDataService.getPage({ page, limit: 50, t: this.searchInput,
+        const response = await AssignmentDataService.getPage({ page, limit: this.pageSize, t: this.searchInput,
           from: moment(this.filterFrom).startOf("day").toISOString(),
           to: moment(this.filterTo).endOf("day").toISOString() });
         if (requestId !== this.requestId) return;

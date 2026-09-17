@@ -14,8 +14,13 @@
     <p v-if="loadError" role="alert">{{ loadError }}</p>
     <p v-if="loading">読み込み中…</p>
     <div>
+      <label class="mr-2">1ページの表示件数
+        <select v-model.number="pageSize" :disabled="loading" @change="loadPage(1)">
+          <option v-for="size in [10,20,50,100]" :key="size" :value="size">{{ size }}件</option>
+        </select>
+      </label>
       <button :disabled="loading || page === 1" @click="loadPage(page - 1)">前へ</button>
-      <span class="m-2">{{ page }} ページ（最大50件）</span>
+      <span class="m-2">{{ page }} ページ（最大{{ pageSize }}件）</span>
       <button :disabled="loading || !hasMore" @click="loadPage(page + 1)">次へ</button>
     </div>
     <div class="list row mt-4">
@@ -104,7 +109,7 @@ export default {
     this.emptySurvey = emptySurvey;
     return {
       surveys: [],
-      page: 1, hasMore: false, loading: false, loadError: "", requestId: 0,
+      page: 1, pageSize: 50, hasMore: false, loading: false, loadError: "", requestId: 0,
       currentSurvey: emptySurvey,
       currentIndex: -1,
       name: "",
@@ -122,7 +127,7 @@ export default {
       const requestId = ++this.requestId;
       this.loading = true; this.loadError = "";
       try {
-        const response = await SurveyDataService.getPage({ page, limit: 50, t: this.name });
+        const response = await SurveyDataService.getPage({ page, limit: this.pageSize, t: this.name });
         if (requestId !== this.requestId) return;
         this.surveys = response.data.items; this.hasMore = response.data.hasMore; this.page = page;
         this.currentSurvey = this.emptySurvey; this.currentIndex = -1;

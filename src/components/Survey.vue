@@ -201,6 +201,54 @@
         </tbody>
       </table>
 
+      <h4 class="mt-5">
+        <img class="mb-1 mr-1" src="/assets/img/people.svg" width="24" height="24" />
+        Group assignments
+      </h4>
+
+      <table class="table table-hover">
+        <thead class="thead-light">
+          <tr>
+            <th style="width: 20%">Assignment</th>
+            <th style="width: 10%">Group</th>
+            <th style="width: 20%">createdAt</th>
+            <th style="width: 20%">publishFrom</th>
+            <th style="width: 20%">publishTo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="(assignment, index) in groupAssignments" 
+            :key="index"
+            @dblclick="goToAssignment(assignment)"
+          >
+            <tdAssignmentNameLink :data="{assignment}" />
+            <td>
+              <a :href="'/groups/' + assignment.groupId">{{ assignment.groupId }}</a>
+            </td>
+            <td>{{ getCalendar(assignment.createdAt) }}</td>
+            <td>{{ getCalendar(assignment.publishFrom) }}</td>
+            <td>{{ getCalendar(assignment.publishTo) }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+
+      <div class="mt-4">
+        <label class="mr-2">配信一覧の表示件数
+          <select v-model.number="assignmentPageSize" :disabled="assignmentsLoading" @change="getAssignmentsOfSurvey(undefined, 1)">
+            <option v-for="size in [10,20,50,100]" :key="size" :value="size">{{ size }}件</option>
+          </select>
+        </label>
+        <p v-if="assignmentsError" role="alert">{{ assignmentsError }}</p>
+        <button :disabled="assignmentsLoading || assignmentPage === 1" @click="getAssignmentsOfSurvey(undefined, assignmentPage - 1)">配信一覧：前へ</button>
+        <span class="m-2">{{ assignmentPage }} ページ（個人・グループ合計で最大{{ assignmentPageSize }}件）</span>
+        <button :disabled="assignmentsLoading || !assignmentsHasMore" @click="getAssignmentsOfSurvey(undefined, assignmentPage + 1)">次へ</button>
+      </div>
+      <answer-export v-if="currentSurvey._id" :key="currentSurvey._id" :survey-id="currentSurvey._id" :survey-name="currentSurvey.name" />
+      <details class="mt-4">
+        <summary>旧形式の個別配信データ（互換用）</summary>
+        <p>旧方式で個別配信に保存されたデータを出力します。通常の回答結果は上の「回答結果のダウンロード」をご利用ください。</p>
       <p v-if="downloadError" role="alert">{{ downloadError }}</p>
       <div class="mt-4" v-if="!isGeneratingDownload && !(datasetCsv || datasetJson)">
         <span class="m-2">
@@ -240,90 +288,7 @@
         </span>
       </div>
 
-      <h4 class="mt-5">
-        <img class="mb-1 mr-1" src="/assets/img/people.svg" width="24" height="24" />
-        Group assignments
-      </h4>
-
-      <table class="table table-hover">
-        <thead class="thead-light">
-          <tr>
-            <th style="width: 20%">Assignment</th>
-            <th style="width: 10%">Group</th>
-            <th style="width: 20%">createdAt</th>
-            <th style="width: 20%">publishFrom</th>
-            <th style="width: 20%">publishTo</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="(assignment, index) in groupAssignments" 
-            :key="index"
-            @dblclick="goToAssignment(assignment)"
-          >
-            <tdAssignmentNameLink :data="{assignment}" />
-            <td>
-              <a :href="'/groups/' + assignment.groupId">{{ assignment.groupId }}</a>
-            </td>
-            <td>{{ getCalendar(assignment.createdAt) }}</td>
-            <td>{{ getCalendar(assignment.publishFrom) }}</td>
-            <td>{{ getCalendar(assignment.publishTo) }}</td>
-          </tr>
-        </tbody>
-      </table>
-
-
-      <div class="mt-4">
-        <p v-if="assignmentsError" role="alert">{{ assignmentsError }}</p>
-        <button :disabled="assignmentsLoading || assignmentPage === 1" @click="getAssignmentsOfSurvey(undefined, assignmentPage - 1)">配信一覧：前へ</button>
-        <span class="m-2">{{ assignmentPage }} ページ（個人・グループ合計で最大50件）</span>
-        <button :disabled="assignmentsLoading || !assignmentsHasMore" @click="getAssignmentsOfSurvey(undefined, assignmentPage + 1)">次へ</button>
-      </div>
-      <div class="mt-4">
-        <label>回答日時（画面の端末の時刻）：
-          <input type="date" v-model="exportFrom" :disabled="isGeneratingResultsDownload" @change="clearResultsDownloads" /> ～
-          <input type="date" v-model="exportTo" :disabled="isGeneratingResultsDownload" @change="clearResultsDownloads" />
-        </label>
-        <p>表示中の50件に限らず、このSurveyの全員分の回答を出力します。両方空欄の場合は全期間が対象です。回答が1万件を超える場合は、期間を分けて出力してください。</p>
-        <p v-if="exportError" role="alert">{{ exportError }}</p>
-      </div>
-      <div class="mt-4" v-if="!isGeneratingResultsDownload">
-        <span class="m-2">
-          Generate
-        </span>
-        <span class="m-2">
-          <a href="javascript:;" @click="generateResultsCsv">CSV</a>
-        </span>
-        <span target="m-2">
-          <a href="javascript:;" @click="generateResultsJson">JSON</a>
-        </span>
-      </div>
-
-      <div class="mt-4 export-status" v-if="isGeneratingResultsDownload" role="status" aria-live="polite" aria-busy="true">
-        <span class="export-spinner" aria-hidden="true"></span>
-        <span>ダウンロード用データを作成中です。このままお待ちください。</span>
-      </div>
-
-      <div class="mt-4" v-if="!isGeneratingResultsDownload && (datasetResultsCsv || datasetResultsJson)">
-        <span class="m-2" v-if="datasetResultsCsv">
-          <a 
-            v-bind:href="datasetResultsCsv"
-            target="_blank" 
-            v-bind:download='currentSurvey.id ? currentSurvey.id : currentSurvey.name + "_results.csv"'
-            >
-            Download CSV
-          </a>
-        </span>
-        <span target="m-2" v-if="datasetResultsJson">
-          <a 
-            v-bind:href="datasetResultsJson"
-            target="_blank" 
-            v-bind:download='currentSurvey.id ? currentSurvey.id : currentSurvey.name + "_results.json"'
-            >
-            Download JSON
-          </a>
-        </span>
-      </div>
+      </details>
 
     </div>
   </div>
@@ -360,6 +325,7 @@
 
 <script>
 import moment from "moment";
+import AnswerExport from "./AnswerExport";
 import datetime from "vuejs-datetimepicker";
 
 import SurveyDataService from "../services/SurveyDataService";
@@ -373,6 +339,7 @@ import trDetail from "./table/tr/trDetail";
 
 export default {
   components: {
+    AnswerExport,
     datetime,
     tdAssignmentNameLink,
     hLargeIconHeader,
@@ -410,17 +377,12 @@ export default {
       randomizeMinutes: 0,
 
       assignments: [],
-      assignmentPage: 1, assignmentsHasMore: false, assignmentsLoading: false, assignmentsError: "", assignmentRequest: 0,
+      assignmentPage: 1, assignmentPageSize: 50, assignmentsHasMore: false, assignmentsLoading: false, assignmentsError: "", assignmentRequest: 0,
 
       isGeneratingDownload: false,
       downloadError: "",
       datasetJson: null,
-      datasetCsv: null,
-
-      isGeneratingResultsDownload: false,
-      exportFrom: "", exportTo: "", exportError: "",
-      datasetResultsJson: null,
-      datasetResultsCsv: null
+      datasetCsv: null
     };
   },
   computed: {
@@ -475,7 +437,7 @@ export default {
       const request = ++this.assignmentRequest;
       this.assignmentsLoading = true; this.assignmentsError = "";
       try {
-        const response = await AssignmentDataService.getPage({ surveyId: id || this.$route.params.id, page, limit: 50 });
+        const response = await AssignmentDataService.getPage({ surveyId: id || this.$route.params.id, page, limit: this.assignmentPageSize });
         if (request !== this.assignmentRequest) return;
         this.assignments = response.data.items; this.assignmentPage = page; this.assignmentsHasMore = response.data.hasMore;
       } catch (e) { if (request === this.assignmentRequest) this.assignmentsError = "配信一覧を取得できませんでした。"; }
@@ -605,36 +567,9 @@ export default {
       finally { this.isGeneratingDownload = false; }
     },
 
-    clearResultsDownloads() {
-      [this.datasetResultsCsv, this.datasetResultsJson].filter(Boolean).forEach(url => URL.revokeObjectURL(url));
-      this.datasetResultsCsv = null; this.datasetResultsJson = null;
-    },
-    generateResultsCsv() { return this.generateResults("csv"); },
-    generateResultsJson() { return this.generateResults("json"); },
-    async generateResults(format) {
-      if (this.isGeneratingResultsDownload) return;
-      this.exportError = "";
-      if (!!this.exportFrom !== !!this.exportTo || (this.exportFrom && this.exportFrom > this.exportTo)) {
-        this.exportError = "開始日と終了日を正しく指定してください。"; return;
-      }
-      this.isGeneratingResultsDownload = true;
-      const params = this.exportFrom ? {
-        from: moment(this.exportFrom).startOf("day").toISOString(),
-        to: moment(this.exportTo).endOf("day").toISOString()
-      } : {};
-      try {
-        const method = format === "csv" ? "getResultsCsv" : "getResultsJson";
-        const response = await SurveyDataService[method](this.currentSurvey._id, params);
-        const key = format === "csv" ? "datasetResultsCsv" : "datasetResultsJson";
-        if (this[key]) URL.revokeObjectURL(this[key]);
-        this[key] = URL.createObjectURL(new Blob([format === "csv" ? response.data : JSON.stringify(response.data)],
-          { type: format === "csv" ? "text/csv;charset=utf-8" : "application/json" }));
-      } catch (e) { this.exportError = "出力できませんでした。期間を絞って再試行してください。"; }
-      finally { this.isGeneratingResultsDownload = false; }
-    }
+
   },
   
-  beforeDestroy() { this.clearResultsDownloads(); },
   mounted() {
     moment.locale("en-ca");
     this.updateMessage = "";

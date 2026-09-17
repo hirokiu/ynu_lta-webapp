@@ -9,6 +9,8 @@ http.interceptors.request.use(function (config) {
 });
 
 class SurveyDataService {
+  getResultsPage(id, params) { return http.get(`/surveys/${id}/results`, { params }); }
+  exportResults(id, options) { return http.post(`/surveys/${id}/datasets/results/export`, options); }
   getPage(params) { return http.get("/admin/surveys", { params }); }
   getAll() {
     return http.get("/surveys");
