@@ -21,7 +21,10 @@
       </div>
 
       <div class="col">
-        <h4>Config</h4>
+        <h4>設問テンプレート</h4>
+        <button class="btn btn-outline-primary mb-2" @click="saveTemplate">設問テンプレートを保存</button>
+        <p>設問・選択肢・通知文面をJSONで保存します。回答・配信先・日時は含みません。</p>
+        <p v-if="templateError" role="alert" class="text-danger">{{ templateError }}</p>
 
         <textarea class="code-block" v-model="currentSurveyConfig" rows="25" cols="60" disabled></textarea>
       </div>
@@ -325,6 +328,8 @@
 
 <script>
 import moment from "moment";
+import { surveyTemplate } from "../utils/surveyTemplate";
+import download from "downloadjs";
 import AnswerExport from "./AnswerExport";
 import datetime from "vuejs-datetimepicker";
 
@@ -348,6 +353,7 @@ export default {
   name: "survey",
   data() {
     return {
+      templateError: "",
       currentSurvey: {
         title: "",
         _id: "",
@@ -394,6 +400,14 @@ export default {
      }
   },
   methods: {
+    saveTemplate() {
+      this.templateError = "";
+      try {
+        const value = surveyTemplate(this.currentSurvey);
+        const filename = value.name.replace(/[^a-zA-Z0-9_\-\u3040-\u30ff\u4e00-\u9fff]/g, "_") || "survey";
+        download(JSON.stringify(value, null, 2), filename + ".template.json", "application/json");
+      } catch (e) { this.templateError = e.message; }
+    },
     getCalendar(dt) {
       if (!dt) return "";
       return moment(dt).calendar();
