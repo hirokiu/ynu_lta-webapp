@@ -6,6 +6,14 @@
           <div class="card-header">Login</div>
           <div class="card-body">
             <div v-if="error" class="alert alert-danger">{{error}}</div>
+            <div v-if="isDev" class="mb-3">
+              <button type="button" class="btn btn-outline-primary" :disabled="googleBusy" @click="googleLogin">{{ googleBusy ? 'ログイン中…' : 'Googleでログイン（開発用）' }}</button>
+              <div v-if="googleUid" role="status" class="mt-2">
+                <p>本人認証が完了しました。管理者権限はまだ付与されていません。</p>
+                <label for="firebase-uid">管理者設定用UID（上松さんからお知らせください）</label>
+                <input id="firebase-uid" class="form-control" readonly :value="googleUid" />
+              </div>
+            </div>
             <form action="#" @submit.prevent="submit">
               <div class="form-group row">
                 <label for="email" class="col-md-4 col-form-label text-md-right">Email</label>
@@ -63,16 +71,39 @@ export default {
         email: "",
         password: ""
       },
+      isDev: process.env.VUE_APP_FIREBASE_PROJECT_ID === "kirokun-dev",
+      googleBusy: false,
+      googleUid: "",
       error: null
     };
   },
   methods: {
+    async googleLogin() {
+      if (this.googleBusy) return;
+      this.googleBusy = true; this.googleUid = ""; this.error = null;
+      try {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: "select_account" });
+        const result = await firebase.auth().signInWithPopup(provider);
+        this.googleUid = result.user.uid;
+        const token = await result.user.getIdToken();
+        // Verify authorization before opening the administration screen.
+        const response = await fetch((process.env.VUE_APP_API_BASE_URL || "/api") + "/admin/surveys?limit=1", { headers: { token } });
+        if (!response.ok) { this.error = "ログインできましたが、管理者としての利用はまだ許可されていません。UIDをお知らせください。"; return; }
+        await this.$store.dispatch("fetchUser", result.user);
+        this.$router.replace({ name: "Users" });
+      } catch (e) {
+        this.error = e.code === "auth/unauthorized-domain"
+          ? "Firebaseの承認済みドメインに、この画面のホスト名を追加してください。"
+          : "Googleログインを完了できませんでした。ポップアップの許可とアカウントを確認してください。";
+      } finally { this.googleBusy = false; }
+    },
     submit() {
       firebase
         .auth()
         .signInWithEmailAndPassword(this.form.email, this.form.password)
         .then(resp => {
-          console.log("" + resp.user.getIdToken());
+          void resp;
           this.$router.replace({ name: "Users" });
         })
         .catch(err => {

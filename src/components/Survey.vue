@@ -21,7 +21,10 @@
       </div>
 
       <div class="col">
-        <h4>Config</h4>
+        <h4>設問テンプレート</h4>
+        <button class="btn btn-outline-primary mb-2" @click="saveTemplate">設問テンプレートを保存</button>
+        <p>設問・選択肢・通知文面をJSONで保存します。回答・配信先・日時は含みません。</p>
+        <p v-if="templateError" role="alert" class="text-danger">{{ templateError }}</p>
 
         <textarea class="code-block" v-model="currentSurveyConfig" rows="25" cols="60" disabled></textarea>
       </div>
@@ -201,45 +204,6 @@
         </tbody>
       </table>
 
-      <div class="mt-4" v-if="!isGeneratingDownload && !(datasetCsv || datasetJson)">
-        <span class="m-2">
-          Generate
-        </span>
-        <span class="m-2">
-          <a href="javascript:;" @click="generateCsv">CSV</a>
-        </span>
-        <span target="m-2">
-          <a href="javascript:;" @click="generateJson">JSON</a>
-        </span>
-      </div>
-
-      <div class="mt-4" v-if="isGeneratingDownload">
-        <span class="m-2">
-          Generating...
-        </span>
-      </div>
-
-      <div class="mt-4" v-if="!isGeneratingDownload && (datasetCsv || datasetJson)">
-        <span class="m-2" v-if="datasetCsv">
-          <a 
-            v-bind:href="`data:text/csv;charset=utf-8,` + encodeURIComponent(datasetCsv)"
-            target="_blank" 
-            v-bind:download='currentSurvey.id || currentSurvey.name + ".csv"'
-            >
-            Download CSV
-          </a>
-        </span>
-        <span target="m-2" v-if="datasetJson">
-          <a 
-            v-bind:href="`data:text/json;charset=utf-8,` + encodeURIComponent(datasetJson)"
-            target="_blank" 
-            v-bind:download='currentSurvey.id || currentSurvey.name + ".json"'
-            >
-            Download JSON
-          </a>
-        </span>
-      </div>
-
       <h4 class="mt-5">
         <img class="mb-1 mr-1" src="/assets/img/people.svg" width="24" height="24" />
         Group assignments
@@ -273,44 +237,61 @@
       </table>
 
 
-      <div class="mt-4" v-if="!isGeneratingResultsDownload && !(datasetResultsCsv || datasetResultsJson)">
+      <div class="mt-4">
+        <label class="mr-2">配信一覧の表示件数
+          <select v-model.number="assignmentPageSize" :disabled="assignmentsLoading" @change="getAssignmentsOfSurvey(undefined, 1)">
+            <option v-for="size in [10,20,50,100]" :key="size" :value="size">{{ size }}件</option>
+          </select>
+        </label>
+        <p v-if="assignmentsError" role="alert">{{ assignmentsError }}</p>
+        <button :disabled="assignmentsLoading || assignmentPage === 1" @click="getAssignmentsOfSurvey(undefined, assignmentPage - 1)">配信一覧：前へ</button>
+        <span class="m-2">{{ assignmentPage }} ページ（個人・グループ合計で最大{{ assignmentPageSize }}件）</span>
+        <button :disabled="assignmentsLoading || !assignmentsHasMore" @click="getAssignmentsOfSurvey(undefined, assignmentPage + 1)">次へ</button>
+      </div>
+      <answer-export v-if="currentSurvey._id" :key="currentSurvey._id" :survey-id="currentSurvey._id" :survey-name="currentSurvey.name" />
+      <details class="mt-4">
+        <summary>旧形式の個別配信データ（互換用）</summary>
+        <p>旧方式で個別配信に保存されたデータを出力します。通常の回答結果は上の「回答結果のダウンロード」をご利用ください。</p>
+      <p v-if="downloadError" role="alert">{{ downloadError }}</p>
+      <div class="mt-4" v-if="!isGeneratingDownload && !(datasetCsv || datasetJson)">
         <span class="m-2">
           Generate
         </span>
         <span class="m-2">
-          <a href="javascript:;" @click="generateResultsCsv">CSV</a>
+          <a href="javascript:;" @click="generateCsv">CSV</a>
         </span>
         <span target="m-2">
-          <a href="javascript:;" @click="generateResultsJson">JSON</a>
+          <a href="javascript:;" @click="generateJson">JSON</a>
         </span>
       </div>
 
-      <div class="mt-4" v-if="isGeneratingResultsDownload">
-        <span class="m-2">
-          Generating...
-        </span>
+      <div class="mt-4 export-status" v-if="isGeneratingDownload" role="status" aria-live="polite" aria-busy="true">
+        <span class="export-spinner" aria-hidden="true"></span>
+        <span>ダウンロード用データを作成中です。このままお待ちください。</span>
       </div>
 
-      <div class="mt-4" v-if="!isGeneratingResultsDownload && (datasetResultsCsv || datasetResultsJson)">
-        <span class="m-2" v-if="datasetResultsCsv">
+      <div class="mt-4" v-if="!isGeneratingDownload && (datasetCsv || datasetJson)">
+        <span class="m-2" v-if="datasetCsv">
           <a 
-            v-bind:href="`data:text/csv;charset=utf-8,` + encodeURIComponent(datasetResultsCsv)"
+            v-bind:href="`data:text/csv;charset=utf-8,` + encodeURIComponent(datasetCsv)"
             target="_blank" 
-            v-bind:download='currentSurvey.id ? currentSurvey.id : currentSurvey.name + "_results.csv"'
+            v-bind:download='currentSurvey.id || currentSurvey.name + ".csv"'
             >
             Download CSV
           </a>
         </span>
-        <span target="m-2" v-if="datasetResultsJson">
+        <span target="m-2" v-if="datasetJson">
           <a 
-            v-bind:href="`data:text/json;charset=utf-8,` + encodeURIComponent(datasetResultsJson)"
+            v-bind:href="`data:text/json;charset=utf-8,` + encodeURIComponent(datasetJson)"
             target="_blank" 
-            v-bind:download='currentSurvey.id ? currentSurvey.id : currentSurvey.name + "_results.json"'
+            v-bind:download='currentSurvey.id || currentSurvey.name + ".json"'
             >
             Download JSON
           </a>
         </span>
       </div>
+
+      </details>
 
     </div>
   </div>
@@ -347,6 +328,9 @@
 
 <script>
 import moment from "moment";
+import { surveyTemplate } from "../utils/surveyTemplate";
+import download from "downloadjs";
+import AnswerExport from "./AnswerExport";
 import datetime from "vuejs-datetimepicker";
 
 import SurveyDataService from "../services/SurveyDataService";
@@ -360,6 +344,7 @@ import trDetail from "./table/tr/trDetail";
 
 export default {
   components: {
+    AnswerExport,
     datetime,
     tdAssignmentNameLink,
     hLargeIconHeader,
@@ -368,6 +353,7 @@ export default {
   name: "survey",
   data() {
     return {
+      templateError: "",
       currentSurvey: {
         title: "",
         _id: "",
@@ -397,14 +383,12 @@ export default {
       randomizeMinutes: 0,
 
       assignments: [],
+      assignmentPage: 1, assignmentPageSize: 50, assignmentsHasMore: false, assignmentsLoading: false, assignmentsError: "", assignmentRequest: 0,
 
       isGeneratingDownload: false,
+      downloadError: "",
       datasetJson: null,
-      datasetCsv: null,
-
-      isGeneratingResultsDownload: false,
-      datasetResultsJson: null,
-      datasetResultsCsv: null
+      datasetCsv: null
     };
   },
   computed: {
@@ -416,6 +400,14 @@ export default {
      }
   },
   methods: {
+    saveTemplate() {
+      this.templateError = "";
+      try {
+        const value = surveyTemplate(this.currentSurvey);
+        const filename = value.name.replace(/[^a-zA-Z0-9_\-\u3040-\u30ff\u4e00-\u9fff]/g, "_") || "survey";
+        download(JSON.stringify(value, null, 2), filename + ".template.json", "application/json");
+      } catch (e) { this.templateError = e.message; }
+    },
     getCalendar(dt) {
       if (!dt) return "";
       return moment(dt).calendar();
@@ -455,14 +447,15 @@ export default {
         });
     },
 
-    getAssignmentsOfSurvey(id) {
-      AssignmentDataService.getAssignmentsOfSurvey(id)
-        .then(response => {
-          this.assignments = response.data;
-        })
-        .catch(e => {
-          console.log(e);
-        });
+    async getAssignmentsOfSurvey(id, page = 1) {
+      const request = ++this.assignmentRequest;
+      this.assignmentsLoading = true; this.assignmentsError = "";
+      try {
+        const response = await AssignmentDataService.getPage({ surveyId: id || this.$route.params.id, page, limit: this.assignmentPageSize });
+        if (request !== this.assignmentRequest) return;
+        this.assignments = response.data.items; this.assignmentPage = page; this.assignmentsHasMore = response.data.hasMore;
+      } catch (e) { if (request === this.assignmentRequest) this.assignmentsError = "配信一覧を取得できませんでした。"; }
+      finally { if (request === this.assignmentRequest) this.assignmentsLoading = false; }
     },
 
     updatePublished(status) {
@@ -574,41 +567,21 @@ export default {
       window.location.href = "/assignments/" + assignment._id;
     },
 
-    generateCsv() {
-      this.isGeneratingDownload = true
-      SurveyDataService.getCsv(this.currentSurvey._id)
-        .then(apiResponse => {
-          this.datasetCsv = apiResponse.data
-          this.isGeneratingDownload = false
-      })
+    generateCsv() { return this.generateLegacyDownload("csv"); },
+    generateJson() { return this.generateLegacyDownload("json"); },
+    async generateLegacyDownload(format) {
+      if (this.isGeneratingDownload) return;
+      this.isGeneratingDownload = true; this.downloadError = "";
+      try {
+        const method = format === "csv" ? "getCsv" : "getJson";
+        const response = await SurveyDataService[method](this.currentSurvey._id);
+        if (format === "csv") this.datasetCsv = response.data;
+        else this.datasetJson = JSON.stringify(response.data);
+      } catch (e) { this.downloadError = "出力できませんでした。再試行してください。"; }
+      finally { this.isGeneratingDownload = false; }
     },
 
-    generateJson() {
-      this.isGeneratingDownload = true
-      SurveyDataService.getJson(this.currentSurvey._id)
-        .then(apiResponse => {
-          this.datasetJson = JSON.stringify(apiResponse.data)
-          this.isGeneratingDownload = false
-      })
-    },
 
-    generateResultsCsv() {
-      this.isGeneratingResultsDownload = true
-      SurveyDataService.getResultsCsv(this.currentSurvey._id)
-        .then(apiResponse => {
-          this.datasetResultsCsv = apiResponse.data
-          this.isGeneratingResultsDownload = false
-      })
-    },
-
-    generateResultsJson() {
-      this.isGeneratingDoisGeneratingResultsDownloadwnload = true
-      SurveyDataService.getResultsJson(this.currentSurvey._id)
-        .then(apiResponse => {
-          this.datasetResultsJson = JSON.stringify(apiResponse.data)
-          this.isGeneratingResultsDownload = false
-      })
-    }
   },
   
   mounted() {
@@ -624,6 +597,15 @@ export default {
 </script>
 
 <style>
+.export-status { display: flex; align-items: center; gap: 0.75rem; }
+.export-spinner {
+  display: inline-block; width: 1.5rem; height: 1.5rem; flex-shrink: 0;
+  border: 3px solid #d8dce0; border-top-color: #245b91; border-radius: 50%;
+  animation: export-spin 0.8s linear infinite;
+}
+@keyframes export-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .export-spinner { animation: none; } }
+
 .edit-form {
   max-width: 300px;
 }
