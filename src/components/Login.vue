@@ -86,6 +86,12 @@ export default {
         provider.setCustomParameters({ prompt: "select_account" });
         const result = await firebase.auth().signInWithPopup(provider);
         this.googleUid = result.user.uid;
+        const token = await result.user.getIdToken();
+        // Verify authorization before opening the administration screen.
+        const response = await fetch((process.env.VUE_APP_API_BASE_URL || "/api") + "/admin/surveys?limit=1", { headers: { token } });
+        if (!response.ok) { this.error = "ログインできましたが、管理者としての利用はまだ許可されていません。UIDをお知らせください。"; return; }
+        await this.$store.dispatch("fetchUser", result.user);
+        this.$router.replace({ name: "Users" });
       } catch (e) {
         this.error = e.code === "auth/unauthorized-domain"
           ? "Firebaseの承認済みドメインに、この画面のホスト名を追加してください。"
