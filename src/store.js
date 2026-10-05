@@ -29,11 +29,11 @@ export default new Vuex.Store({
     }
   },
   actions: {
-    fetchUser({ commit }, user) {
+    async fetchUser({ commit }, user) {
 
       if (user) {
 
-        user.getIdToken().then(function(idToken) {
+        await user.getIdToken().then(function(idToken) {
           // console.log("user.getIdToken().then... :");
           // console.log(idToken);
           // console.log("setting token to idToken: " + idToken);

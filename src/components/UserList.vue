@@ -1,6 +1,7 @@
 <template>
   <div>
     <hLargeIconHeader text="Users" :icon="'person'"></hLargeIconHeader>
+    <router-link v-if="usernameAccountsEnabled" to="/account-invite" class="btn btn-primary">回答者を招待</router-link>
 
     <div>
       <div class="search-field input-group mb-4 mt-4">
@@ -86,6 +87,15 @@ import tableDetailsHeader from "./table/tableDetailsHeader";
 import trDetail from "./table/tr/trDetail";
 
 export default {
+  mixins: [{
+    data: () => ({usernameAccountsEnabled: false}),
+    async created() {
+      try {
+        const response = await fetch((process.env.VUE_APP_API_BASE_URL || '/api') + '/auth/options');
+        this.usernameAccountsEnabled = response.ok && (await response.json()).usernameLogin === true;
+      } catch (_) { this.usernameAccountsEnabled = false; }
+    }
+  }],
   name: "user-list",
   components: {
     tdUserNameLink,
