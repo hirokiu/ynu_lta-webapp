@@ -92,7 +92,8 @@ export default {
     async created() {
       try {
         const response = await fetch((process.env.VUE_APP_API_BASE_URL || '/api') + '/auth/options');
-        this.usernameAccountsEnabled = response.ok && (await response.json()).usernameLogin === true;
+        const features = response.ok ? await response.json() : {};
+        this.usernameAccountsEnabled = features.invitations === true || features.passwordReset === true;
       } catch (_) { this.usernameAccountsEnabled = false; }
     }
   }],

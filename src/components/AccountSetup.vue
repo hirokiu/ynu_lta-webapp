@@ -2,8 +2,9 @@
   <section class="my-4">
     <h2>KIROKUN アカウント登録</h2>
     <p>パスワードまたはGoogleで登録できます。既存アカウントの移行では先にパスワードを設定し、その後Googleを追加してください。</p>
-    <button class="btn btn-outline-primary mb-3" :disabled="busy" @click="google">Googleで登録</button>
-    <form @submit.prevent="activate">
+    <button v-if="features.googleRegistration" class="btn btn-outline-primary mb-3" :disabled="busy" @click="google">Googleで登録</button>
+    <p v-if="featuresLoaded && !features.invitations">この環境では新規登録を停止しています。</p>
+    <form v-if="features.invitations" @submit.prevent="activate">
       <label for="new-password">パスワード（12〜128文字）</label>
       <input id="new-password" type="password" class="form-control" v-model="password" minlength="12" maxlength="128" required autocomplete="new-password" />
       <label for="confirm-password">パスワード（確認）</label>
@@ -14,9 +15,11 @@
   </section>
 </template>
 <script>
+import accountFeatures from '../mixins/accountFeatures';
 import * as firebase from 'firebase/app';
 import 'firebase/auth';
 export default {
+  mixins: [accountFeatures],
   data: () => ({password: '', confirmation: '', invitation: '', busy: false, error: ''}),
   created() {
     this.invitation = new URLSearchParams(window.location.hash.slice(1)).get('invitation') || '';
@@ -25,6 +28,7 @@ export default {
   },
   methods: {
     async google() {
+      if (!this.features.googleRegistration) return;
       if (this.busy) return;
       this.busy = true; this.error = '';
       try {
@@ -51,6 +55,7 @@ export default {
       finally { this.busy = false; }
     },
     async activate() {
+      if (!this.features.invitations) return;
       if (this.busy) return;
       if (this.password !== this.confirmation) { this.error = 'パスワードが一致しません。'; return; }
       this.busy = true; this.error = '';

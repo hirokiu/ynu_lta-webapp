@@ -1,7 +1,8 @@
 <template>
   <section class="my-4">
     <h2>パスワードの再設定</h2>
-    <form v-if="!done" @submit.prevent="submit">
+    <p v-if="featuresLoaded && !features.passwordReset">この環境ではパスワード再設定を停止しています。管理者にお問い合わせください。</p>
+    <form v-if="!done && features.passwordReset" @submit.prevent="submit">
       <label for="password">新しいパスワード（12〜128文字）</label>
       <input id="password" v-model="password" type="password" class="form-control" autocomplete="new-password" minlength="12" maxlength="128" required />
       <label for="confirmation">パスワード（確認）</label>
@@ -13,7 +14,9 @@
   </section>
 </template>
 <script>
+import accountFeatures from '../mixins/accountFeatures';
 export default {
+  mixins: [accountFeatures],
   data: () => ({reset: '', password: '', confirmation: '', busy: false, done: false, message: ''}),
   created() {
     this.reset = new URLSearchParams(window.location.hash.slice(1)).get('reset') || '';
@@ -21,7 +24,7 @@ export default {
   },
   methods: {
     async submit() {
-      if (this.busy) return;
+      if (this.busy || !this.features.passwordReset) return;
       if (this.password !== this.confirmation) { this.message = 'パスワードが一致しません。'; return; }
       this.busy = true; this.message = '';
       try {
