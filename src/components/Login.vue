@@ -7,7 +7,7 @@
           <div class="card-body">
             <div v-if="error" class="alert alert-danger">{{error}}</div>
             <div v-if="isDev || usernameLogin" class="mb-3">
-              <button type="button" class="btn btn-outline-primary" :disabled="googleBusy" @click="googleLogin">{{ googleBusy ? 'ログイン中…' : 'Googleでログイン（開発用）' }}</button>
+              <button type="button" class="btn btn-outline-primary" :disabled="googleBusy" @click="googleLogin">{{ googleBusy ? 'ログイン中…' : 'Googleでログイン' }}</button>
               <div v-if="googleUid" role="status" class="mt-2">
                 <p>本人認証が完了しました。管理者権限はまだ付与されていません。</p>
                 <label for="firebase-uid">管理者設定用UID（上松さんからお知らせください）</label>
@@ -16,7 +16,7 @@
             </div>
             <form action="#" @submit.prevent="submit">
               <div class="form-group row">
-                <label for="email" class="col-md-4 col-form-label text-md-right">{{usernameLogin ? 'ログインID（従来のメール形式も利用可能）' : 'Email'}}</label>
+                <label for="email" class="col-md-4 col-form-label text-md-right">ユーザー名 / メールアドレス</label>
 
                 <div class="col-md-6">
                   <input
@@ -63,6 +63,7 @@
 <script>
 import * as firebase from "firebase/app";
 import "firebase/auth";
+import {passwordLogin} from "../services/passwordLogin";
 
 export default {
   data() {
@@ -113,16 +114,8 @@ export default {
     async submit() {
       this.error = null;
       try {
-        let result;
-        if (this.usernameLogin && !this.form.email.includes('@')) {
-          const response = await fetch((process.env.VUE_APP_API_BASE_URL || '/api') + '/auth/username-login', {
-            method: 'POST', headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({username: this.form.email, password: this.form.password})
-          });
-          const data = await response.json();
-          if (!response.ok) throw new Error(data.error || 'ログインできませんでした。');
-          result = await firebase.auth().signInWithCustomToken(data.customToken);
-        } else result = await firebase.auth().signInWithEmailAndPassword(this.form.email, this.form.password);
+        const result = await passwordLogin({loginId: this.form.email, password: this.form.password,
+          base: process.env.VUE_APP_API_BASE_URL || '/api', auth: firebase.auth()});
         this.form.password = '';
         await this.finishLogin(result.user);
       } catch (e) { this.error = e.message || 'ログインできませんでした。'; }
