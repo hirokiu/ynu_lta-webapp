@@ -22,6 +22,11 @@
 
       <div class="col">
         <h4>設問テンプレート</h4>
+        <button class="btn btn-outline-primary mb-2 mr-2" @click="checkStructure">アンケートの構造をチェック</button>
+        <div v-if="structureResult !== null" role="status">
+          <p v-if="!structureResult.length">構造チェックを通過しました。表示・分岐の意図は実機でも確認してください。</p>
+          <ul v-else class="text-danger"><li v-for="(issue, i) in structureResult" :key="i">{{ issue }}</li></ul>
+        </div>
         <button class="btn btn-outline-primary mb-2" @click="saveTemplate">設問テンプレートを保存</button>
         <p>設問・選択肢・通知文面をJSONで保存します。回答・配信先・日時は含みません。</p>
         <p v-if="templateError" role="alert" class="text-danger">{{ templateError }}</p>
@@ -328,7 +333,7 @@
 
 <script>
 import moment from "moment";
-import { surveyTemplate } from "../utils/surveyTemplate";
+import { surveyTemplate, surveyStructureErrors } from "../utils/surveyTemplate";
 import download from "downloadjs";
 import AnswerExport from "./AnswerExport";
 import datetime from "vuejs-datetimepicker";
@@ -354,6 +359,7 @@ export default {
   data() {
     return {
       templateError: "",
+      structureResult: null,
       currentSurvey: {
         title: "",
         _id: "",
@@ -400,6 +406,10 @@ export default {
      }
   },
   methods: {
+    checkStructure() {
+      try { this.structureResult = surveyStructureErrors(surveyTemplate(this.currentSurvey)); }
+      catch (e) { this.structureResult = [e.message]; }
+    },
     saveTemplate() {
       this.templateError = "";
       try {

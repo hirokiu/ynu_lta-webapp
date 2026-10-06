@@ -9,7 +9,7 @@
       <label for="config">設問テンプレートのJSON（編集できます）</label>
       <textarea id="config" v-model="config" rows="20" class="form-control code-block" :disabled="busy || reading" @input="reviewed = null; error = ''" />
       <p class="mt-2">nameは管理用の名前、titleは表示用タイトルです。通知文面も引き継ぐため確認してください。回答・配信情報・内部IDは保存対象から除外します。</p>
-      <button class="btn btn-outline-primary mr-2" :disabled="busy || reading" @click="review">内容を確認</button>
+      <button class="btn btn-outline-primary mr-2" :disabled="busy || reading" @click="review">構造をチェックして内容を確認</button>
       <section v-if="reviewed" class="card card-body mt-3" aria-label="保存内容の確認">
         <h4>{{ reviewed.name }}</h4><p>{{ reviewed.title }}</p>
         <p>設問・見出し：{{ reviewed.questions.length }}件</p>
@@ -18,7 +18,7 @@
       </section>
     </div>
     <div v-else role="status"><h4>新しいSurveyを保存しました。配信はしていません。</h4><router-link v-if="savedId" :to="'/surveys/' + savedId">保存したSurveyを開く</router-link><button class="btn btn-outline-primary ml-3" @click="newSurvey">続けて新規作成</button></div>
-    <p v-if="error" role="alert" class="text-danger mt-3">{{ error }}</p>
+    <p v-if="error" role="alert" class="text-danger mt-3" style="white-space: pre-line">{{ error }}</p>
   </div>
 </template>
 <script>
