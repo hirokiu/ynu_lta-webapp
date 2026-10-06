@@ -3,7 +3,7 @@
     <div v-if="isPreview" role="status" class="alert alert-warning mb-0 text-center">
       proto移行前の確認環境：アプリとは連携していません。通知は送信されません。ここでの変更は現行環境には反映されません。残したい設問はテンプレートで保存してください。
     </div>
-    <nav v-if="$store.state.user.data" class="navbar navbar-expand navbar-dark bg-dark">
+    <nav v-if="$store.state.user.data && !['/register', '/account', '/reset-password'].includes($route.path)" class="navbar navbar-expand navbar-dark bg-dark">
       <a href="/surveys" class="navbar-brand">KIROKUN</a>
       <div class="navbar-nav mr-auto">
         <li class="nav-item">
