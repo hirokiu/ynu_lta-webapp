@@ -45,5 +45,41 @@ export function parseTemplate(text) {
   let value;
   try { value = JSON.parse(text.replace(/^\uFEFF/, '')); }
   catch (_) { throw new Error('JSONの書式に誤りがあります。括弧・カンマ・引用符を確認してください。'); }
-  return surveyTemplate(value);
+  const result = surveyTemplate(value);
+  const errors = surveyStructureErrors(result);
+  if (errors.length) throw new Error(errors.join("\n"));
+  return result;
+}
+
+// Validate the navigation contract shared by the currently deployed mobile apps.
+// Never repair/reindex automatically: that could change branching semantics.
+export function surveyStructureErrors(survey) {
+  const errors = [];
+  const questions = survey && survey.questions;
+  if (!Array.isArray(questions) || !questions.length) return ['questions に設問を指定してください。'];
+  if (questions.some(q => !object(q))) return ['設問はJSONオブジェクトで指定してください。'];
+  const types = ['header', 'footer', 'open', 'single', 'multi', 'likert', 'blanks', 'duration', 'slider'];
+  if (questions[0].type !== 'header' || questions.filter(q => q.type === 'header').length !== 1)
+    errors.push('先頭に開始画面（type: header）を1つ配置してください。');
+  if (questions[questions.length - 1].type !== 'footer' || questions.filter(q => q.type === 'footer').length !== 1)
+    errors.push('末尾に回答確認・送信画面（type: footer）を1つ配置してください。');
+  if (!questions.some(q => types.includes(q.type) && !['header', 'footer'].includes(q.type)))
+    errors.push('回答する設問を1つ以上配置してください。');
+  questions.forEach((q, position) => {
+    const label = `questions[${position}]（index: ${q.index}）`;
+    if (q.index !== position) errors.push(`${label}: indexは配列順に0から始まる連番にしてください。`);
+    if (!types.includes(q.type)) errors.push(`${label}: 未対応のtype「${q.type}」です。`);
+    if (['single', 'multi'].includes(q.type) && (!Array.isArray(q.values) || !q.values.length || q.values.some(v => typeof v !== 'string' || !v.trim())))
+      errors.push(`${label}: 空でない選択肢（values）が必要です。`);
+    if (q.skip && (!Number.isInteger(q.skip.goto) || q.skip.goto <= q.index || !questions.some(t => t.index === q.skip.goto)))
+      errors.push(`${label}: skip.gotoは後方の存在する設問または送信画面を指定してください（自己参照・逆戻りは不可）。`);
+    if (q.includeIf) {
+      const target = questions.find(t => t.index === q.includeIf.ifIndex);
+      if (!target || target.index >= q.index || !['single', 'multi', 'likert', 'blanks'].includes(target.type))
+        errors.push(`${label}: includeIf.ifIndexは手前の選択式設問を指定してください。`);
+    }
+    if (['header', 'footer'].includes(q.type) && (q.skip || q.includeIf))
+      errors.push(`${label}: 開始・送信画面には分岐条件を設定できません。`);
+  });
+  return errors;
 }

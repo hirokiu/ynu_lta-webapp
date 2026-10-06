@@ -3,13 +3,13 @@ const fs = require('fs');
 const vm = require('vm');
 const context = {};
 vm.runInNewContext(fs.readFileSync('src/utils/surveyTemplate.js','utf8').replace(/export function/g,'function'), context);
-const {surveyTemplate, parseTemplate} = context;
-const original = {name:'研究テンプレート',_id:'db-id',id:'legacy',userId:'private',answers:['private'],publishedAt:'date',questions:[{index:0,type:'single',text:'質問',values:['はい','いいえ'],_id:'question-id',skip:{ifChosen:1,goto:1}},{index:1,type:'footer',text:'完了'}]};
+const {surveyTemplate, parseTemplate, surveyStructureErrors} = context;
+const original = {name:'研究テンプレート',_id:'db-id',id:'legacy',userId:'private',answers:['private'],publishedAt:'date',questions:[{index:0,type:'header',text:'開始'},{index:1,type:'single',text:'質問',values:['はい','いいえ'],_id:'question-id',skip:{ifChosen:1,goto:2}},{index:2,type:'footer',text:'完了'}]};
 const clean = surveyTemplate(original);
 assert(!clean._id && !clean.id && !clean.userId && !clean.answers && !clean.publishedAt);
-assert(!clean.questions[0]._id);assert.equal(clean.questions[0].skip.goto,1);
+assert(!clean.questions[1]._id);assert.equal(clean.questions[1].skip.goto,2);
 assert.equal(JSON.stringify(parseTemplate(JSON.stringify(clean))),JSON.stringify(clean));
-assert(original.questions[0]._id);
+assert(original.questions[1]._id);
 assert.throws(()=>parseTemplate('broken'));
 assert.throws(()=>parseTemplate('[{"answer":1}]'));
 assert.throws(()=>surveyTemplate({...original,questions:[{index:0,type:'single',skip:{ifChosen:0,goto:99}}]}));
@@ -25,5 +25,15 @@ const def=c.module.exports,state=def.data();for(const [k,v] of Object.entries(de
  state.review();await state.saveSurvey();assert(!state.submitted);assert(state.error);assert(!state.busy);
  fail=false;await state.saveSurvey();assert(state.submitted);assert.equal(state.savedId,'new-survey');
  state.newSurvey();state.config='invalid';state.review();assert(!state.reviewed);assert(state.error);
+ const before=calls;state.config=JSON.stringify({name:'broken',questions:[{index:1,type:'open'}]});state.review();await state.saveSurvey();assert(!state.reviewed);assert.equal(calls,before);
  console.log('Template isolation, round-trip, validation, import and save failure/success tests passed');
 })().catch(e=>{console.error(e);process.exit(1);});
+
+const onlyOpen = {name:'invalid',questions:[{index:1,type:'open'}]};
+assert.throws(()=>parseTemplate(JSON.stringify(onlyOpen)), /header/);
+assert(surveyStructureErrors(onlyOpen).some(e=>e.includes('footer')));
+for (const change of [q=>q[1].index=8,q=>q[1].type='unknown',q=>q[1].values=[],q=>q[1].skip={ifChosen:-1,goto:1},q=>q[1].includeIf={ifIndex:2,ifValue:1}]) {
+ const broken=JSON.parse(JSON.stringify(original));change(broken.questions);
+ assert.throws(()=>parseTemplate(JSON.stringify(broken)));
+}
+assert.equal(surveyStructureErrors(original).length,0);
