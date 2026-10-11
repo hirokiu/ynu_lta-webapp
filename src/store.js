@@ -5,6 +5,7 @@ Vue.use(Vuex);
 
 export default new Vuex.Store({
   state: {
+    projectName: "",
     user: {
       loggedIn: false,
       data: null
@@ -20,6 +21,7 @@ export default new Vuex.Store({
     }
   },
   mutations: {
+    SET_PROJECT_NAME(state, name) { state.projectName = name; },
     SET_USER(state, data) {
         state.user.data = data;
     },
@@ -29,7 +31,7 @@ export default new Vuex.Store({
     }
   },
   actions: {
-    async fetchUser({ commit }, user) {
+    async fetchUser({ commit, state }, user) {
 
       if (user) {
 
@@ -46,8 +48,18 @@ export default new Vuex.Store({
           email: user.email
         };
         commit("SET_USER", data);
+        // Display metadata is optional and must not interrupt login.
+        try {
+          const token = await user.getIdToken();
+          const response = await fetch((process.env.VUE_APP_API_BASE_URL || '/api').replace(/\/$/, '') + '/project', {headers: {token}});
+          if (response.ok) {
+            const project = await response.json();
+            if (state.user.data === data && typeof project.displayName === 'string') commit('SET_PROJECT_NAME', project.displayName);
+          }
+        } catch (_) { /* Retain the current display name while offline. */ }
 
       } else {
+        commit("SET_PROJECT_NAME", "");
         commit("SET_USER", null);
         commit("SET_TOKEN", null);
       }
