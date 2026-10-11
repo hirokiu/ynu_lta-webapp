@@ -18,7 +18,7 @@ import * as firebase from 'firebase/app';
 import 'firebase/auth';
 export default {
   data: () => ({displayName: '', revision: null, busy: false, message: ''}),
-  watch: {'$store.state.token': function () { if (this.revision === null) this.load(); }},
+  watch: {'$store.state.user.data': function (user) { if (user && this.revision === null) this.load(); }},
   mounted() { this.load(); },
   methods: {
     async headers() {
