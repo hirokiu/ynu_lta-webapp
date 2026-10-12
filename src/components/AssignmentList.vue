@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="assignment-list-page">
     <hLargeIconHeader text="Assignments" :icon="'pencil'"></hLargeIconHeader>
 
     <div>
@@ -31,8 +31,8 @@
     <p v-if="loading">読み込み中…</p>
     <p v-if="!loading && !loadError && !assignments.length">条件に一致する配信はありません。期間や検索条件を確認してください。</p>
     <list-pagination position="上" :page="page" :page-size="pageSize" :has-more="hasMore" :disabled="loading" @page-change="loadPage" @size-change="pageSize = $event; loadPage(1)"></list-pagination>
-    <div class="list row mt-4">
-      <div class="col-md-4">
+    <div class="list preview-layout assignment-layout mt-4" :class="{'has-preview': currentAssignment}">
+      <div class="preview-table">
         <list-range :total="total" :count="assignments.length" :page="page" :page-size="pageSize" :loading="loading" :error="loadError" />
         <table class="table table-hover">
           <thead class="thead-light">
@@ -56,8 +56,10 @@
               <!-- <tr v-bind:class="{ 'table-success': assignment.dataset }" v-for="(assignment, index) in assignments" :key="index"> -->
 
               <tdAssignmentNameLink :data="{assignment}" />
-              <tdGrayIfFuture v-if="assignment.publishAt" :unixMs="assignment.publishAt" />
-              <tdGrayIfFuture v-if="!assignment.publishAt" :unixMs="assignment.publishFrom" :unixMs2 = assignment.publishTo />
+              <td :class="{'td-gray': isToHappen(assignment.publishAt || assignment.publishFrom)}">
+                {{ getCalendar(assignment.publishAt || assignment.publishFrom) }}
+                <template v-if="!assignment.publishAt && assignment.publishTo"><br />– {{ getCalendar(assignment.publishTo) }}</template>
+              </td>
               <td class="td-wrap">
                 <span v-if="assignment.userId" >
                   <img class="mb-2 mr-2" src="/assets/img/person.svg" width="12" height="12" />
@@ -86,8 +88,8 @@
         <list-pagination position="下" :page="page" :page-size="pageSize" :has-more="hasMore" :disabled="loading" @page-change="loadPage" @size-change="pageSize = $event; loadPage(1)"></list-pagination>
       </div>
 
-      <div class="col-md-2 ml-4">
-        <div v-if="currentAssignment">
+      <div class="preview-column" v-if="currentAssignment">
+        <div class="list-preview" role="region" aria-label="選択した項目のプレビュー" tabindex="0">
           <tableDetailsHeader
             icon="pencil"
             :text="(currentAssignment.userId ? currentAssignment.userId : currentAssignment.groupId) + ' @ ' + currentAssignment.survey.name"
@@ -130,7 +132,6 @@ import AssignmentDataService from "../services/AssignmentDataService";
 import moment, {timeSettings} from "../utils/projectTime";
 import datetime from "vuejs-datetimepicker";
 import tdAssignmentNameLink from "./table/td/tdAssignmentNameLink";
-import tdGrayIfFuture from "./table/td/tdGrayIfFuture";
 import hLargeIconHeader from "./h/hLargeIconHeader";
 import tableDetailsHeader from "./table/tableDetailsHeader";
 import trDetail from "./table/tr/trDetail";
@@ -142,7 +143,6 @@ export default {
     ListRange,
     datetime,
     tdAssignmentNameLink,
-    tdGrayIfFuture,
     hLargeIconHeader,
     tableDetailsHeader,
     trDetail
@@ -210,33 +210,16 @@ export default {
 };
 </script>
 
-<style>
-.list {
-  text-align: left;
-  width: 1800pt;
-}
-.td-wrap {
-  word-break: break-word;
-}
-.search-field {
-  width: 578pt;
-}
-.code-detail {
-  font-family: monospace, Arial, sans-serif;
-  font-size: smaller;
-  color: #666;
-}
-.detail {
-  font-size: smaller;
-  color: #666;
-}
-.active {
-  background: #eaeaea;
-}
-.ra {
-  text-align: right;
-}
-.text-align-center {
-  text-align: center;
+<style scoped>
+.list.assignment-layout { width: 100%; grid-template-columns: minmax(0, 1fr); }
+.list.assignment-layout.has-preview { grid-template-columns: minmax(0, 3fr) minmax(260px, 1fr); }
+.assignment-list-page .search-field { width: 100%; max-width: 100%; flex-wrap: wrap; }
+.table { width: 100%; table-layout: fixed; }
+.table th, .table td { overflow-wrap: anywhere; }
+.td-gray { color: #aaa; }
+.active { background: #eaeaea; }
+@media (max-width: 767px) {
+  .list.assignment-layout.has-preview { grid-template-columns: minmax(0, 1fr); }
+  .table th, .table td { padding: .4rem; }
 }
 </style>
