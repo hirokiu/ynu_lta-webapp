@@ -4,9 +4,8 @@
       開発用環境です。Protoとはデータ・アカウントが異なります。
     </div>
     <nav v-if="$store.state.user.data && !['/register', '/account', '/reset-password'].includes($route.path)" class="navbar navbar-expand navbar-dark bg-dark project-navigation" aria-label="管理メニュー">
-      <a href="/surveys" class="navbar-brand">KIROKUN</a>
+      <a href="/surveys" class="navbar-brand">KIROKUN<span v-if="$store.state.projectName"> &gt; {{ $store.state.projectName }}</span></a>
       <div class="navbar-nav mr-auto" style="flex-wrap: wrap">
-        <li class="nav-item"><router-link to="/project-settings" class="nav-link" :class="{'is-current': activeSection === 'project'}" :aria-current="activeSection === 'project' ? 'page' : null">プロジェクト設定<span v-if="$store.state.projectName">：{{ $store.state.projectName }}</span></router-link></li>
         <li class="nav-item">
           <a href="/users" class="nav-link" :class="{'is-current': activeSection === 'users'}" :aria-current="activeSection === 'users' ? 'page' : null">Users</a>
         </li>
@@ -19,6 +18,7 @@
         <li class="nav-item">
           <a href="/assignments" class="nav-link" :class="{'is-current': activeSection === 'assignments'}" :aria-current="activeSection === 'assignments' ? 'page' : null">Assignments</a>
         </li>
+        <li class="nav-item"><router-link to="/project-settings" class="nav-link" :class="{'is-current': activeSection === 'project'}" :aria-current="activeSection === 'project' ? 'page' : null">Settings</router-link></li>
         <li class="nav-item">
           <a href="/login" class="nav-link">Log out</a>
         </li>
@@ -37,9 +37,9 @@ export default {
   computed: {
     activeSection() {
       const name = (this.$route.name || '').toLowerCase();
-      const path = this.$route.path.toLowerCase();
+      const path = this.$route.path.toLowerCase().replace(/^\/webadmin(?=\/)/, '');
       if (path === '/project-settings') return 'project';
-      if (path === '/account-invite' || ['users', 'user'].includes(name)) return 'users';
+      if (path === '/account-invite' || /^\/users?(?:\/|$)/.test(path) || name.includes('user')) return 'users';
       if (name.includes('group')) return 'groups';
       if (name.includes('survey')) return 'surveys';
       if (name.includes('assignment')) return 'assignments';
