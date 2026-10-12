@@ -19,6 +19,8 @@
           <a href="/assignments" class="nav-link">Assignments</a>
         </li>
         <li class="nav-item">
+          <a href="/settings" class="nav-link">Settings</a>
+        </li><li class="nav-item">
           <a href="/login" class="nav-link">Log out</a>
         </li>
       </div>
