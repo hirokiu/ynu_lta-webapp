@@ -6,6 +6,11 @@ Vue.use(Router);
 export default new Router({
   mode: "history",
   routes: [
+    {path: '/project-settings', component: () => import('./components/ProjectSettings')},
+    {path: '/account-invite', component: () => import('./components/AccountInvite')},
+    {path: '/reset-password', component: () => import('./components/PasswordReset')},
+    {path: '/register', component: () => import('./components/AccountSetup')},
+    {path: '/account', component: () => import('./components/AccountProfile')},
     {
       path: "/users",
       alias: ["/Users", "/webadmin/users"],

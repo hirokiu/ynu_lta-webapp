@@ -16,8 +16,8 @@
       </div>
     </div>
 
-    <div class="list row mt-4">
-      <div class="col-md-4">
+    <div class="list preview-layout mt-4" :class="{'has-preview': currentGroup}">
+      <div class="preview-table">
         <table class="table table-hover">
           <thead class="thead-light">
             <tr>
@@ -44,8 +44,8 @@
         </table>
       </div>
 
-      <div class="col-md-2 ml-4">
-        <div v-if="currentGroup">
+      <div class="preview-column">
+        <div v-if="currentGroup" class="list-preview" role="region" aria-label="選択した項目のプレビュー" tabindex="0">
           <tableDetailsHeader
             icon="person"
             :text="currentGroup.groupId"

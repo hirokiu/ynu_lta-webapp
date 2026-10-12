@@ -142,7 +142,9 @@ export default {
         this.downloadFormat = format; this.downloadName = this.surveyName + "_results." + format; this.completedScope = label;
       } catch (e) {
         const status = e.response && e.response.status;
-        this.error = status === 413 ? "回答が10,000件を超えています。期間を分けて出力してください。" :
+        this.error = status === 413 ? "出力データの容量または列数が上限を超えています。期間を分けて出力してください。" :
+          status === 429 ? "ほかのダウンロード用データを作成中です。少し待ってから再試行してください。" :
+          status === 503 ? "作成に時間がかかっています。期間を分けて出力してください。" :
           status === 422 ? "選択した回答が更新・削除された可能性があります。一覧を更新して選び直してください。" : "出力できませんでした。再試行してください。";
       } finally { if (!this.disposed) this.busy = false; }
     }
