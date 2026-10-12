@@ -42,6 +42,7 @@
     </div>
     <div class="list row mt-4">
       <div class="col-md-4">
+        <list-range :total="total" :count="assignments.length" :page="page" :page-size="pageSize" :loading="loading" :error="loadError" />
         <table class="table table-hover">
           <thead class="thead-light">
             <tr>
@@ -90,6 +91,7 @@
             </tr>
           </tbody>
         </table>
+        <list-range :total="total" :count="assignments.length" :page="page" :page-size="pageSize" :loading="loading" :error="loadError" />
       </div>
 
       <div class="col-md-2 ml-4">
@@ -129,6 +131,7 @@
 </template>
 
 <script>
+import ListRange from "./ListRange";
 import AssignmentDataService from "../services/AssignmentDataService";
 
 import moment, {timeSettings} from "../utils/projectTime";
@@ -142,6 +145,7 @@ import trDetail from "./table/tr/trDetail";
 export default {
   name: "assignment-list",
   components: {
+    ListRange,
     datetime,
     tdAssignmentNameLink,
     tdGrayIfFuture,
@@ -152,7 +156,7 @@ export default {
   data() {
     return {
       assignments: [],
-      page: 1, pageSize: 50, hasMore: false, loading: false, loadError: "", requestId: 0,
+      total: null, page: 1, pageSize: 50, hasMore: false, loading: false, loadError: "", requestId: 0,
       currentIndex: -1,
       currentAssignment: null,
       searchInput: "",
@@ -181,7 +185,7 @@ export default {
           ...(this.periodMode === "period" ? {from: moment(this.filterFrom).startOf("day").toISOString(),
           to: moment(this.filterTo).endOf("day").toISOString()} : {}) });
         if (requestId !== this.requestId) return;
-        this.assignments = response.data.items; this.hasMore = response.data.hasMore; this.page = page;
+        this.total = response.data.total; this.assignments = response.data.items; this.hasMore = response.data.hasMore; this.page = page;
         this.currentAssignment = null; this.currentIndex = -1;
       } catch (e) { if (requestId === this.requestId) this.loadError = "取得できませんでした。期間を確認して再試行してください。"; }
       finally { if (requestId === this.requestId) this.loading = false; }

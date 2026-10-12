@@ -147,6 +147,7 @@
         Assignments
       </h3>
 
+      <list-range label="配信一覧（個人・グループ合計）：" :total="assignmentsTotal" :count="assignments.length" :page="assignmentPage" :page-size="assignmentPageSize" :loading="assignmentsLoading" :error="assignmentsError" />
       <h4 class="mt-5">
         <img class="mb-1 mr-1" src="/assets/img/person.svg" width="24" height="24" />
         User assignments
@@ -243,6 +244,7 @@
       </table>
 
 
+      <list-range label="配信一覧（個人・グループ合計）：" :total="assignmentsTotal" :count="assignments.length" :page="assignmentPage" :page-size="assignmentPageSize" :loading="assignmentsLoading" :error="assignmentsError" />
       <div class="mt-4">
         <label class="mr-2">配信一覧の表示件数
           <select v-model.number="assignmentPageSize" :disabled="assignmentsLoading" @change="getAssignmentsOfSurvey(undefined, 1)">
@@ -333,6 +335,7 @@
 </template>
 
 <script>
+import ListRange from "./ListRange";
 import moment, {timeSettings} from "../utils/projectTime";
 import { surveyTemplate, surveyStructureErrors } from "../utils/surveyTemplate";
 import download from "downloadjs";
@@ -350,6 +353,7 @@ import trDetail from "./table/tr/trDetail";
 
 export default {
   components: {
+    ListRange,
     AnswerExport,
     datetime,
     tdAssignmentNameLink,
@@ -390,7 +394,7 @@ export default {
       randomizeMinutes: 0,
 
       assignments: [],
-      assignmentPage: 1, assignmentPageSize: 50, assignmentsHasMore: false, assignmentsLoading: false, assignmentsError: "", assignmentRequest: 0,
+      assignmentsTotal: null, assignmentPage: 1, assignmentPageSize: 50, assignmentsHasMore: false, assignmentsLoading: false, assignmentsError: "", assignmentRequest: 0,
 
       isGeneratingDownload: false,
       downloadError: "",
@@ -465,7 +469,7 @@ export default {
       try {
         const response = await AssignmentDataService.getPage({ surveyId: id || this.$route.params.id, page, limit: this.assignmentPageSize });
         if (request !== this.assignmentRequest) return;
-        this.assignments = response.data.items; this.assignmentPage = page; this.assignmentsHasMore = response.data.hasMore;
+        this.assignmentsTotal = response.data.total; this.assignments = response.data.items; this.assignmentPage = page; this.assignmentsHasMore = response.data.hasMore;
       } catch (e) { if (request === this.assignmentRequest) this.assignmentsError = "配信一覧を取得できませんでした。"; }
       finally { if (request === this.assignmentRequest) this.assignmentsLoading = false; }
     },

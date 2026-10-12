@@ -34,6 +34,7 @@
       <p>選択中：{{ selectedIds.length }}件
         <button type="button" :disabled="busy || !selectedIds.length" @click="clearSelection">選択を解除</button>
       </p>
+      <list-range :total="total" :count="items.length" :page="page" :page-size="pageSize" :loading="loading" :error="listError" />
       <div class="answer-table-wrap">
         <table class="table">
           <thead><tr>
@@ -49,6 +50,7 @@
           </tbody>
         </table>
       </div>
+      <list-range :total="total" :count="items.length" :page="page" :page-size="pageSize" :loading="loading" :error="listError" />
       <p class="text-muted">一度に選択できる回答は1,000件までです。</p>
     </div>
 
@@ -70,11 +72,13 @@
 </template>
 
 <script>
+import ListRange from "./ListRange";
 import download from "downloadjs";
 import SurveyDataService from "../services/SurveyDataService";
 import moment, {timeSettings} from "../utils/projectTime";
 
 export default {
+  components: { ListRange },
   props: { surveyId: { type: String, required: true }, surveyName: { type: String, default: "survey" } },
   data() {
     return { scope: "all", from: "", to: "", page: 1, pageSize: 50, hasMore: false, items: [],

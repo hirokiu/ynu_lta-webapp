@@ -25,6 +25,7 @@
     </div>
     <div class="list preview-layout mt-4" :class="{'has-preview': currentSurvey && currentSurvey._id}">
       <div class="preview-table">
+        <list-range :total="total" :count="surveys.length" :page="page" :page-size="pageSize" :loading="loading" :error="loadError" />
         <table class="table table-hover">
           <thead class="thead-light">
             <tr>
@@ -49,6 +50,7 @@
             </tr>
           </tbody>
         </table>
+        <list-range :total="total" :count="surveys.length" :page="page" :page-size="pageSize" :loading="loading" :error="loadError" />
 
         <table class="table">
           <tr>
@@ -80,6 +82,7 @@
 </template>
 
 <script>
+import ListRange from "./ListRange";
 import moment from "../utils/projectTime";
 
 import SurveyDataService from "../services/SurveyDataService";
@@ -92,6 +95,7 @@ import trDetail from "./table/tr/trDetail";
 export default {
   name: "survey-list",
   components: {
+    ListRange,
     tdSurveyNameLink,
     hLargeIconHeader,
     tableDetailsHeader,
@@ -109,7 +113,7 @@ export default {
     this.emptySurvey = emptySurvey;
     return {
       surveys: [],
-      page: 1, pageSize: 50, hasMore: false, loading: false, loadError: "", requestId: 0,
+      total: null, page: 1, pageSize: 50, hasMore: false, loading: false, loadError: "", requestId: 0,
       currentSurvey: emptySurvey,
       currentIndex: -1,
       name: "",
@@ -129,7 +133,7 @@ export default {
       try {
         const response = await SurveyDataService.getPage({ page, limit: this.pageSize, t: this.name });
         if (requestId !== this.requestId) return;
-        this.surveys = response.data.items; this.hasMore = response.data.hasMore; this.page = page;
+        this.total = response.data.total; this.surveys = response.data.items; this.hasMore = response.data.hasMore; this.page = page;
         this.currentSurvey = this.emptySurvey; this.currentIndex = -1;
       } catch (e) { if (requestId === this.requestId) this.loadError = "取得できませんでした。再試行してください。"; }
       finally { if (requestId === this.requestId) this.loading = false; }

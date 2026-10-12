@@ -16,8 +16,10 @@
       </div>
     </div>
 
+    <p v-if="loadError" role="alert">{{ loadError }}</p>
     <div class="list preview-layout mt-4" :class="{'has-preview': currentGroup}">
       <div class="preview-table">
+        <list-range :total="groups.length" :count="groups.length" :loading="loading" :error="loadError" />
         <table class="table table-hover">
           <thead class="thead-light">
             <tr>
@@ -42,6 +44,7 @@
             </tr>
           </tbody>
         </table>
+        <list-range :total="groups.length" :count="groups.length" :loading="loading" :error="loadError" />
       </div>
 
       <div class="preview-column">
@@ -72,6 +75,7 @@
 </template>
 
 <script>
+import ListRange from "./ListRange";
 import moment from "../utils/projectTime";
 
 import GroupDataService from "../services/GroupDataService";
@@ -84,6 +88,7 @@ import trDetail from "./table/tr/trDetail";
 export default {
   name: "group-list",
   components: {
+    ListRange,
     tdGroupNameLink,
     hLargeIconHeader,
     tableDetailsHeader,
@@ -91,7 +96,7 @@ export default {
   },
   data() {
     return {
-      groups: [],
+      groups: [], loading: false, loadError: "", requestId: 0,
       currentGroup: null,
       currentIndex: -1,
       searchInput: ""
@@ -102,18 +107,10 @@ export default {
       if (!dt) return "";
       return moment(dt).calendar();
     },
-    retrieveGroups() {
-      GroupDataService.getAll()
-        .then(response => {
-          this.groups = response.data;
-        })
-        .catch(e => {
-          console.log(e);
-        });
-    },
+    retrieveGroups() { this.search(); },
 
     refreshList() {
-      this.retrieveGroup();
+      this.retrieveGroups();
       this.currentGroup = null;
       this.currentIndex = -1;
     },
@@ -126,15 +123,15 @@ export default {
       window.location.href = "/groups/" + group.groupId;
     },
 
-    search() {
-      GroupDataService.findByGroupId(this.searchInput)
-        .then(response => {
-          this.groups = response.data;
-          this.setActive(null);
-        })
-        .catch(e => {
-          console.log(e);
-        });
+    async search() {
+      const requestId = ++this.requestId;
+      this.loading = true; this.loadError = "";
+      try {
+        const response = await (this.searchInput ? GroupDataService.findByGroupId(this.searchInput) : GroupDataService.getAll());
+        if (requestId !== this.requestId) return;
+        this.groups = response.data; this.setActive(null, -1);
+      } catch (e) { if (requestId === this.requestId) this.loadError = "取得できませんでした。再試行してください。"; }
+      finally { if (requestId === this.requestId) this.loading = false; }
     }
   },
   mounted() {
