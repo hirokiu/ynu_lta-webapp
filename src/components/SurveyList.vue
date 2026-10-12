@@ -4,7 +4,7 @@
 
     <div>
       <div class="search-field input-group mb-4 mt-4">
-        <input type="text" class="form-control" placeholder="Search by name" v-model="name" />
+        <input type="text" class="form-control" placeholder="Survey名・タイトルで検索" v-model="name" />
         <div class="input-group-append">
           <button class="btn btn-outline-secondary" type="button" @click="search">Search</button>
         </div>

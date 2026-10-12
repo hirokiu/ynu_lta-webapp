@@ -16,6 +16,16 @@
       </div>
     </div>
 
+    <fieldset class="assignment-filters">
+      <legend>条件で絞り込む</legend>
+      <label>Survey名<input class="form-control" v-model="surveyName" @keyup.enter="search" /></label>
+      <label>対象者ID<input class="form-control" v-model="userId" @keyup.enter="search" /></label>
+      <label>グループ名<input class="form-control" v-model="groupId" @keyup.enter="search" /></label>
+      <label>開封状態<select class="form-control" v-model="opened"><option value="">すべて</option><option value="yes">開封済み</option><option value="no">未開封</option></select></label>
+      <label>公開通知<select class="form-control" v-model="notified"><option value="">すべて</option><option value="yes">送信記録あり</option><option value="no">送信記録なし</option></select></label>
+      <button class="btn btn-outline-primary" @click="search">絞り込む</button>
+    </fieldset>
+    <p>入力した条件と期間のすべてに一致する配信を表示します。通知の送信記録は、端末への到着確認を意味しません。</p>
     <label>表示する期間
       <select v-model="periodMode" @change="retrieveAssignments"><option value="all">全期間</option><option value="period">期間を指定</option></select>
     </label>
@@ -153,7 +163,7 @@ export default {
       total: null, page: 1, pageSize: 50, hasMore: false, loading: false, loadError: "", requestId: 0,
       currentIndex: -1,
       currentAssignment: null,
-      searchInput: "",
+      searchInput: "", surveyName: "", userId: "", groupId: "", opened: "", notified: "",
       periodMode: "all",
       filterFrom: moment()
         .startOf("day")
@@ -175,7 +185,7 @@ export default {
       const requestId = ++this.requestId;
       this.loading = true; this.loadError = "";
       try {
-        const response = await AssignmentDataService.getPage({ page, limit: this.pageSize, t: this.searchInput,
+        const response = await AssignmentDataService.getPage({ page, limit: this.pageSize, t: this.searchInput, surveyName: this.surveyName, userId: this.userId, groupId: this.groupId, opened: this.opened, notified: this.notified,
           ...(this.periodMode === "period" ? {from: moment(this.filterFrom).startOf("day").toISOString(),
           to: moment(this.filterTo).endOf("day").toISOString()} : {}) });
         if (requestId !== this.requestId) return;
@@ -211,6 +221,9 @@ export default {
 </script>
 
 <style scoped>
+.assignment-filters { display: flex; flex-wrap: wrap; gap: .8rem; align-items: end; }
+.assignment-filters legend { font-size: 1rem; }
+.assignment-filters label { max-width: 100%; }
 .list.assignment-layout { width: 100%; grid-template-columns: minmax(0, 1fr); }
 .list.assignment-layout.has-preview { grid-template-columns: minmax(0, 3fr) minmax(260px, 1fr); }
 .assignment-list-page .search-field { width: 100%; max-width: 100%; flex-wrap: wrap; }

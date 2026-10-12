@@ -2,7 +2,7 @@
   <div class="list-pagination" role="group" :aria-label="label + '（' + position + '）'">
     <label>{{ sizeLabel }}
       <select :value="pageSize" :disabled="disabled" @change="$emit('size-change', Number($event.target.value))">
-        <option v-for="size in [10,20,50,100]" :key="size" :value="size">{{ size }}件</option>
+        <option v-for="size in [10,50,100,500]" :key="size" :value="size">{{ size }}件</option>
       </select>
     </label>
     <button type="button" class="btn btn-sm btn-outline-secondary" :disabled="disabled || page <= 1" @click="$emit('page-change', page - 1)">前へ</button>

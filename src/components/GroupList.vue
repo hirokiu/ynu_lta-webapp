@@ -20,7 +20,8 @@
     <div class="list preview-layout mt-4" :class="{'has-preview': currentGroup}">
       <div class="preview-table">
         <div class="my-3"><router-link class="btn btn-sm btn-outline-primary" to="/addGroup">Add Group</router-link></div>
-        <list-range :total="groups.length" :count="groups.length" :loading="loading" :error="loadError" />
+        <list-range :total="groups.length" :count="pageItems.length" :page="page" :page-size="pageSize" :loading="loading" :error="loadError" />
+        <list-pagination position="上" :page="page" :page-size="pageSize" :has-more="hasMore" :disabled="loading" @page-change="loadPage" @size-change="pageSize = $event; loadPage(1)" />
         <table class="table table-hover">
           <thead class="thead-light">
             <tr>
@@ -32,7 +33,7 @@
           <tbody>
             <tr
               :class="{ active: index == currentIndex }"
-              v-for="(group, index) in groups"
+              v-for="(group, index) in pageItems"
               :key="index"
               @click="setActive(group, index)"
               @dblclick="goToGroup(group)"
@@ -45,7 +46,8 @@
             </tr>
           </tbody>
         </table>
-        <list-range :total="groups.length" :count="groups.length" :loading="loading" :error="loadError" />
+        <list-range :total="groups.length" :count="pageItems.length" :page="page" :page-size="pageSize" :loading="loading" :error="loadError" />
+        <list-pagination position="下" :page="page" :page-size="pageSize" :has-more="hasMore" :disabled="loading" @page-change="loadPage" @size-change="pageSize = $event; loadPage(1)" />
         <div class="my-3"><router-link class="btn btn-sm btn-outline-primary" to="/addGroup">Add Group</router-link></div>
       </div>
 
@@ -71,6 +73,7 @@
 </template>
 
 <script>
+import ListPagination from "./ListPagination";
 import ListRange from "./ListRange";
 import moment from "../utils/projectTime";
 
@@ -84,6 +87,7 @@ import trDetail from "./table/tr/trDetail";
 export default {
   name: "group-list",
   components: {
+    ListPagination,
     ListRange,
     tdGroupNameLink,
     hLargeIconHeader,
@@ -92,13 +96,19 @@ export default {
   },
   data() {
     return {
+      page: 1, pageSize: 50,
       groups: [], loading: false, loadError: "", requestId: 0,
       currentGroup: null,
       currentIndex: -1,
       searchInput: ""
     };
   },
+  computed: {
+    pageItems() { return this.groups.slice((this.page - 1) * this.pageSize, this.page * this.pageSize); },
+    hasMore() { return this.page * this.pageSize < this.groups.length; }
+  },
   methods: {
+    loadPage(page) { this.page = page; this.setActive(null, -1); },
     getCalendar(dt) {
       if (!dt) return "";
       return moment(dt).calendar();
@@ -125,7 +135,7 @@ export default {
       try {
         const response = await (this.searchInput ? GroupDataService.findByGroupId(this.searchInput) : GroupDataService.getAll());
         if (requestId !== this.requestId) return;
-        this.groups = response.data; this.setActive(null, -1);
+        this.groups = response.data; this.page = 1; this.setActive(null, -1);
       } catch (e) { if (requestId === this.requestId) this.loadError = "取得できませんでした。再試行してください。"; }
       finally { if (requestId === this.requestId) this.loading = false; }
     }

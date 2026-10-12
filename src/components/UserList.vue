@@ -20,7 +20,8 @@
     <p v-if="loadError" role="alert">{{ loadError }}</p>
     <div class="list preview-layout mt-4" :class="{'has-preview': currentUser}">
       <div class="preview-table">
-        <list-range :total="users.length" :count="users.length" :loading="loading" :error="loadError" />
+        <list-range :total="users.length" :count="pageItems.length" :page="page" :page-size="pageSize" :loading="loading" :error="loadError" />
+        <list-pagination position="上" :page="page" :page-size="pageSize" :has-more="hasMore" :disabled="loading" @page-change="loadPage" @size-change="pageSize = $event; loadPage(1)" />
         <table class="table table-hover">
           <thead class="thead-light">
             <tr>
@@ -36,7 +37,7 @@
           <tbody>
             <tr
               :class="{ active: index == currentIndex }"
-              v-for="(user, index) in users"
+              v-for="(user, index) in pageItems"
               :key="index"
               @click="setActive(user, index)"
               @dblclick="goToUser(user)"
@@ -53,7 +54,8 @@
             </tr>
           </tbody>
         </table>
-        <list-range :total="users.length" :count="users.length" :loading="loading" :error="loadError" />
+        <list-range :total="users.length" :count="pageItems.length" :page="page" :page-size="pageSize" :loading="loading" :error="loadError" />
+        <list-pagination position="下" :page="page" :page-size="pageSize" :has-more="hasMore" :disabled="loading" @page-change="loadPage" @size-change="pageSize = $event; loadPage(1)" />
         <router-link v-if="usernameAccountsEnabled" to="/account-invite" class="btn btn-primary my-3">回答者を招待</router-link>
       </div>
 
@@ -81,6 +83,7 @@
 </template>
 
 <script>
+import ListPagination from "./ListPagination";
 import ListRange from "./ListRange";
 import moment from "../utils/projectTime";
 
@@ -104,6 +107,7 @@ export default {
   }],
   name: "user-list",
   components: {
+    ListPagination,
     ListRange,
     hLargeIconHeader,
     tableDetailsHeader,
@@ -111,13 +115,19 @@ export default {
   },
   data() {
     return {
+      page: 1, pageSize: 50,
       users: [], loading: false, loadError: "", requestId: 0,
       currentUser: null,
       currentIndex: -1,
       searchInput: ""
     };
   },
+  computed: {
+    pageItems() { return this.users.slice((this.page - 1) * this.pageSize, this.page * this.pageSize); },
+    hasMore() { return this.page * this.pageSize < this.users.length; }
+  },
   methods: {
+    loadPage(page) { this.page = page; this.setActive(null, -1); },
     getCalendar(dt) {
       if (!dt) return "";
       return moment(dt).calendar();
@@ -144,7 +154,7 @@ export default {
       try {
         const response = await (this.searchInput ? UserDataService.findByUserId(this.searchInput) : UserDataService.getAll());
         if (requestId !== this.requestId) return;
-        this.users = response.data; this.setActive(null, -1);
+        this.users = response.data; this.page = 1; this.setActive(null, -1);
       } catch (e) { if (requestId === this.requestId) this.loadError = "取得できませんでした。再試行してください。"; }
       finally { if (requestId === this.requestId) this.loading = false; }
     }
