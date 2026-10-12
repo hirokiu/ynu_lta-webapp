@@ -126,7 +126,7 @@
 <script>
 import AssignmentDataService from "../services/AssignmentDataService";
 
-import moment from "moment";
+import moment, {timeSettings} from "../utils/projectTime";
 import datetime from "vuejs-datetimepicker";
 import tdAssignmentNameLink from "./table/td/tdAssignmentNameLink";
 import tdGrayIfFuture from "./table/td/tdGrayIfFuture";
@@ -159,6 +159,8 @@ export default {
         .format("YYYY-MM-DD")
     };
   },
+  computed: { timezone() { return timeSettings.timezone; } },
+  watch: { timezone() { this.retrieveAssignments(); } },
   methods: {
     getCalendar(dt) {
       if (!dt) return "";

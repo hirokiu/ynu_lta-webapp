@@ -75,7 +75,7 @@
           </select>
         </div>
         <div>
-          publishAt:
+          publishAt（{{ projectTimezone }}）:
           <datetime format="YYYY-MM-DD H:i:s" width="300px" v-model="scheduleOnceDatetime"></datetime>
         </div>
         <div class="mt-3">
@@ -89,6 +89,7 @@
         <img class="mb-2 mr-1" src="/assets/img/person-plus.svg" width="24" height="24" />
         Schedule Series
       </h4>
+      <p>単発配信・グループへの連続配信は {{ projectTimezone }}、個人への連続配信は回答者のタイムゾーンで設定します。</p>
       <form class="edit-form">
         userId:
         <div class="input-group">
@@ -332,7 +333,7 @@
 </template>
 
 <script>
-import moment from "moment";
+import moment, {timeSettings} from "../utils/projectTime";
 import { surveyTemplate, surveyStructureErrors } from "../utils/surveyTemplate";
 import download from "downloadjs";
 import AnswerExport from "./AnswerExport";
@@ -398,6 +399,7 @@ export default {
     };
   },
   computed: {
+    projectTimezone() { return timeSettings.timezone; },
      userAssignments: function() {
        return this.assignments.filter(a => a.userId)
      },

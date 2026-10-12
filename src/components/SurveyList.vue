@@ -80,7 +80,7 @@
 </template>
 
 <script>
-import moment from "moment";
+import moment from "../utils/projectTime";
 
 import SurveyDataService from "../services/SurveyDataService";
 

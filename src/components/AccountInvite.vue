@@ -24,6 +24,7 @@
   </section>
 </template>
 <script>
+import {formatProjectTime} from "../utils/projectTime";
 import accountFeatures from '../mixins/accountFeatures';
 import * as firebase from 'firebase/app';
 import 'firebase/auth';
@@ -45,7 +46,7 @@ export default {
         if (!response.ok) throw new Error(data.error || '招待を作成できませんでした。');
         if (data.cancelled) { this.message = '招待を取り消しました。'; return; }
         this.link = window.location.origin + (data.reset ? '/reset-password#reset=' + encodeURIComponent(data.reset) : '/register#invitation=' + encodeURIComponent(data.invitation));
-        this.expiresAt = new Date(data.expiresAt).toLocaleString('ja-JP');
+        this.expiresAt = formatProjectTime(data.expiresAt);
       } catch (e) { this.error = e.message || '招待を作成できませんでした。'; }
       finally { this.busy = false; }
     }

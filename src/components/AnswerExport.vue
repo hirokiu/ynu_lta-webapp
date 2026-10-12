@@ -1,7 +1,7 @@
 <template>
   <section class="answer-export mt-5" aria-labelledby="answer-export-title">
     <h3 id="answer-export-title">回答結果のダウンロード</h3>
-    <p>このSurveyに届いた回答をCSVまたはJSONで保存します。</p>
+    <p>このSurveyに届いた回答をCSVまたはJSONで保存します。時刻：{{ timezone }}</p>
     <label for="export-scope">ダウンロードする対象</label>
     <select id="export-scope" class="form-control export-scope" v-model="scope" :disabled="busy" @change="changeScope">
       <option value="all">全員・全期間の回答を一括ダウンロード</option>
@@ -11,7 +11,7 @@
 
     <p v-if="scope === 'all'" class="mt-3">表示ページや表示件数に関係なく、このSurveyの全員分・全期間の回答が対象です。</p>
     <div v-if="scope === 'period'" class="mt-3">
-      <p>対象は回答日時です。配信日ではありません。開始日・終了日の両日を含みます（日本時間）。</p>
+      <p>対象は回答日時です。配信日ではありません。開始日・終了日の両日を含みます（{{ timezone }}）。</p>
       <label for="export-from">回答日時の開始日</label>
       <input id="export-from" type="date" v-model="from" :disabled="busy" @change="clearDownload" />
       <label for="export-to" class="ml-3">終了日</label>
@@ -38,7 +38,7 @@
         <table class="table">
           <thead><tr>
             <th><input type="checkbox" aria-label="このページの回答をすべて選択" :checked="allPageSelected" :disabled="busy || loading || !items.length || (!allPageSelected && pageSelectionTooLarge)" @change="togglePage($event.target.checked)" /></th>
-            <th>回答者</th><th>回答日時（日本時間）</th><th>回答設問数</th>
+            <th>回答者</th><th>回答日時（{{ timezone }}）</th><th>回答設問数</th>
           </tr></thead>
           <tbody>
             <tr v-for="item in items" :key="item._id">
@@ -71,7 +71,7 @@
 
 <script>
 import SurveyDataService from "../services/SurveyDataService";
-import moment from "moment";
+import moment, {timeSettings} from "../utils/projectTime";
 
 export default {
   props: { surveyId: { type: String, required: true }, surveyName: { type: String, default: "survey" } },
@@ -81,6 +81,7 @@ export default {
       downloadUrl: null, downloadFormat: "", downloadName: "", completedScope: "", disposed: false };
   },
   computed: {
+    timezone() { return timeSettings.timezone; },
     allPageSelected() { return this.items.length > 0 && this.items.every(item => this.selectedIds.includes(item._id)); },
     pageSelectionTooLarge() { return new Set([...this.selectedIds, ...this.items.map(item => item._id)]).size > 1000; },
     canExport() {
@@ -90,7 +91,7 @@ export default {
     }
   },
   methods: {
-    formatDate(value) { return value ? moment(value).utcOffset(9).format("YYYY-MM-DD HH:mm:ss") : "—"; },
+    formatDate(value) { return value ? moment(value).format("YYYY-MM-DD HH:mm:ss Z") : "—"; },
     clearDownload() { if (this.downloadUrl) URL.revokeObjectURL(this.downloadUrl); this.downloadUrl = null; this.error = ""; },
     changeScope() { this.clearDownload(); if (this.scope === "selected") this.loadPage(1); },
     clearSelection() { this.selectedIds = []; this.clearDownload(); },
@@ -125,9 +126,9 @@ export default {
       const options = { scope: this.scope, format };
       let label = "全員・全期間";
       if (this.scope === "period") {
-        options.from = this.from + "T00:00:00.000+09:00";
-        options.to = this.to + "T23:59:59.999+09:00";
-        label = this.from + " ～ " + this.to + "（日本時間）";
+        options.from = moment(this.from).startOf("day").toISOString();
+        options.to = moment(this.to).endOf("day").toISOString();
+        label = this.from + " ～ " + this.to + "（" + this.timezone + "）";
       } else if (this.scope === "selected") {
         options.ids = this.selectedIds.slice(); label = "選択した" + options.ids.length + "件の回答";
       }

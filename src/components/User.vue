@@ -196,7 +196,7 @@
 </template>
 
 <script>
-import moment from "moment";
+import moment from "../utils/projectTime";
 
 import UserDataService from "../services/UserDataService";
 import AssignmentDataService from "../services/AssignmentDataService";

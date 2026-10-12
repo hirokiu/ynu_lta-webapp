@@ -1,5 +1,6 @@
 import Vue from "vue";
 import Vuex from "vuex";
+import {setProjectTimezone} from "./utils/projectTime";
 
 Vue.use(Vuex);
 
@@ -21,6 +22,7 @@ export default new Vuex.Store({
     }
   },
   mutations: {
+    SET_PROJECT_TIMEZONE(state, zone) { setProjectTimezone(zone); },
     SET_PROJECT_NAME(state, name) { state.projectName = name; },
     SET_USER(state, data) {
         state.user.data = data;
@@ -51,14 +53,22 @@ export default new Vuex.Store({
         // Display metadata is optional and must not interrupt login.
         try {
           const token = await user.getIdToken();
-          const response = await fetch((process.env.VUE_APP_API_BASE_URL || '/api').replace(/\/$/, '') + '/project', {headers: {token}});
+          const response = await fetch((process.env.VUE_APP_API_BASE_URL || '/api').replace(/\/$/, '') + '/me', {headers: {token}});
           if (response.ok) {
-            const project = await response.json();
-            if (state.user.data === data && typeof project.displayName === 'string') commit('SET_PROJECT_NAME', project.displayName);
+            const metadata = await response.json();
+            const project = metadata.project;
+            if (state.user.data === data) {
+              commit("SET_USER", {...data, username: metadata.username || metadata.userId});
+              if (project) {
+                commit("SET_PROJECT_TIMEZONE", project.timezone);
+                if (typeof project.displayName === "string") commit("SET_PROJECT_NAME", project.displayName);
+              }
+            }
           }
         } catch (_) { /* Retain the current display name while offline. */ }
 
       } else {
+        commit("SET_PROJECT_TIMEZONE", "Asia/Tokyo");
         commit("SET_PROJECT_NAME", "");
         commit("SET_USER", null);
         commit("SET_TOKEN", null);

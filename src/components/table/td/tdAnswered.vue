@@ -11,7 +11,7 @@
 </template>
 
 <script>
-var moment = require("moment");
+import moment from "../../../utils/projectTime";
 
 module.exports = {
   props: {

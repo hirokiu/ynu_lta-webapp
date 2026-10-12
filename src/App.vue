@@ -4,7 +4,7 @@
       開発用環境です。Protoとはデータ・アカウントが異なります。
     </div>
     <nav v-if="$store.state.user.data && !['/register', '/account', '/reset-password'].includes($route.path)" class="navbar navbar-expand navbar-dark bg-dark project-navigation" aria-label="管理メニュー">
-      <a href="/surveys" class="navbar-brand">KIROKUN<span v-if="$store.state.projectName"> &gt; {{ $store.state.projectName }}</span></a>
+      <a href="/surveys" class="navbar-brand">KIROKUN</a>
       <div class="navbar-nav mr-auto" style="flex-wrap: wrap">
         <li class="nav-item">
           <a href="/users" class="nav-link" :class="{'is-current': activeSection === 'users'}" :aria-current="activeSection === 'users' ? 'page' : null">Users</a>
@@ -23,6 +23,11 @@
           <a href="/login" class="nav-link">Log out</a>
         </li>
       </div>
+      <div class="nav-status">
+        <span>{{ $store.state.projectName }}</span><span aria-hidden="true">|</span>
+        <span>{{ loginName }}</span><span aria-hidden="true">|</span>
+        <time :title="timezone" :datetime="now.toISOString()">{{ clock }}</time>
+      </div>
     </nav>
 
     <div class="container">
@@ -32,9 +37,16 @@
 </template>
 
 <script>
+import {formatProjectTime, timeSettings} from "./utils/projectTime";
 export default {
   name: "app",
+  data: () => ({now: new Date(), clockTimer: null}),
+  mounted() { this.clockTimer = setInterval(() => { this.now = new Date(); }, 1000); },
+  beforeDestroy() { clearInterval(this.clockTimer); },
   computed: {
+    timezone() { return timeSettings.timezone; },
+    clock() { return formatProjectTime(this.now); },
+    loginName() { const user = this.$store.state.user.data; return user && (user.username || user.displayName) || ''; },
     activeSection() {
       const name = (this.$route.name || '').toLowerCase();
       const path = this.$route.path.toLowerCase().replace(/^\/webadmin(?=\/)/, '');
@@ -51,6 +63,10 @@ export default {
 };
 </script>
 <style scoped>
+.project-navigation { flex-wrap: wrap; }
+.nav-status { margin-left: auto; display: flex; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap: 0.6rem; color: #fff; font-size: 0.875rem; padding: 0.5rem 0; }
+.nav-status time { white-space: nowrap; font-variant-numeric: tabular-nums; }
+
 .project-navigation .nav-link {
   border-bottom: 3px solid transparent;
   margin: 0 0.15rem;
