@@ -6,6 +6,9 @@
       <label for="project-display-name">表示するプロジェクト名</label>
       <input id="project-display-name" v-model="displayName" class="form-control" :disabled="busy || revision === null" required maxlength="160" />
       <p class="small mt-2">1〜80文字。アプリ更新前のバージョンには反映されません。</p>
+      <label for="project-subtitle">アプリに表示するサブタイトル</label>
+      <input id="project-subtitle" v-model="subtitle" class="form-control" :disabled="busy || revision === null" maxlength="240" />
+      <p class="small mt-2">120文字以内の1行。空欄で保存すると非表示になります。対応アプリでプロジェクト名の下に表示します。</p>
       <label for="project-timezone">タイムゾーン</label>
       <select id="project-timezone" v-model="timezone" class="form-control" :disabled="busy || revision === null">
         <option v-for="zone in zones" :key="zone" :value="zone">{{ zone }}</option>
@@ -23,7 +26,7 @@ import http from '../http-common';
 import * as firebase from 'firebase/app';
 import 'firebase/auth';
 export default {
-  data: () => ({displayName: '', timezone: 'Asia/Tokyo', zones: timezoneNames, revision: null, busy: false, message: ''}),
+  data: () => ({displayName: '', subtitle: '', timezone: 'Asia/Tokyo', zones: timezoneNames, revision: null, busy: false, message: ''}),
   watch: {'$store.state.user.data': function (user) { if (user && this.revision === null) this.load(); }},
   mounted() { this.load(); },
   methods: {
@@ -37,7 +40,7 @@ export default {
       this.busy = true; this.message = '';
       try {
         const {data} = await http.get('/project', {headers: await this.headers()});
-        this.displayName = data.displayName; this.revision = data.revision; this.timezone = data.timezone || 'Asia/Tokyo';
+        this.subtitle = data.subtitle || ''; this.displayName = data.displayName; this.revision = data.revision; this.timezone = data.timezone || 'Asia/Tokyo';
         this.$store.commit('SET_PROJECT_NAME', data.displayName);
         this.$store.commit('SET_PROJECT_TIMEZONE', this.timezone);
       } catch (_) { this.message = '名称を取得できませんでした。ログイン状態を確認し、再読み込みしてください。'; }
@@ -46,11 +49,11 @@ export default {
     async save() {
       this.busy = true; this.message = '';
       try {
-        const {data} = await http.put('/admin/project', {displayName: this.displayName, revision: this.revision, timezone: this.timezone}, {headers: await this.headers()});
-        this.displayName = data.displayName; this.revision = data.revision; this.timezone = data.timezone || 'Asia/Tokyo';
+        const {data} = await http.put('/admin/project', {subtitle: this.subtitle, displayName: this.displayName, revision: this.revision, timezone: this.timezone}, {headers: await this.headers()});
+        this.subtitle = data.subtitle || ''; this.displayName = data.displayName; this.revision = data.revision; this.timezone = data.timezone || 'Asia/Tokyo';
         this.$store.commit('SET_PROJECT_NAME', data.displayName);
         this.$store.commit('SET_PROJECT_TIMEZONE', data.timezone);
-        this.message = '設定を保存しました。アプリのプロジェクト名は開き直すと反映されます。';
+        this.message = '設定を保存しました。アプリの名称・サブタイトルは開き直すと反映されます。';
       } catch (e) {
         this.message = e.response && e.response.data && e.response.data.error || '保存できませんでした。管理者権限と通信状態をご確認ください。';
       } finally { this.busy = false; }
