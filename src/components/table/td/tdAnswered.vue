@@ -13,7 +13,7 @@
 <script>
 import moment from "../../../utils/projectTime";
 
-module.exports = {
+export default {
   props: {
     data: {
       type: Object,

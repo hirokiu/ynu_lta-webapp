@@ -16,7 +16,11 @@
       </div>
     </div>
 
-    <div class="search-field input-group mb-4 mt-4">
+    <label>表示する期間
+      <select v-model="periodMode" @change="retrieveAssignments"><option value="all">全期間</option><option value="period">期間を指定</option></select>
+    </label>
+    <p>全期間では過去の配信も表示します。表示件数を超える分は「次へ」で確認できます。</p>
+    <div v-if="periodMode === 'period'" class="search-field input-group mb-4 mt-4">
       <label>From:</label>
       <datetime class="ml-2 mr-2" format="YYYY-MM-DD" width="316px" v-model="filterFrom" @input="retrieveAssignments"></datetime>
       <label>To:</label>
@@ -25,6 +29,7 @@
 
     <p v-if="loadError" role="alert">{{ loadError }}</p>
     <p v-if="loading">読み込み中…</p>
+    <p v-if="!loading && !loadError && !assignments.length">条件に一致する配信はありません。期間や検索条件を確認してください。</p>
     <div>
       <label class="mr-2">1ページの表示件数
         <select v-model.number="pageSize" :disabled="loading" @change="loadPage(1)">
@@ -151,6 +156,7 @@ export default {
       currentIndex: -1,
       currentAssignment: null,
       searchInput: "",
+      periodMode: "all",
       filterFrom: moment()
         .startOf("day")
         .format("YYYY-MM-DD"),
@@ -172,8 +178,8 @@ export default {
       this.loading = true; this.loadError = "";
       try {
         const response = await AssignmentDataService.getPage({ page, limit: this.pageSize, t: this.searchInput,
-          from: moment(this.filterFrom).startOf("day").toISOString(),
-          to: moment(this.filterTo).endOf("day").toISOString() });
+          ...(this.periodMode === "period" ? {from: moment(this.filterFrom).startOf("day").toISOString(),
+          to: moment(this.filterTo).endOf("day").toISOString()} : {}) });
         if (requestId !== this.requestId) return;
         this.assignments = response.data.items; this.hasMore = response.data.hasMore; this.page = page;
         this.currentAssignment = null; this.currentIndex = -1;

@@ -9,7 +9,7 @@
 
 import moment from "../../../utils/projectTime";
 
-module.exports = {
+export default {
   props: {
     unixMs: {
       type: String

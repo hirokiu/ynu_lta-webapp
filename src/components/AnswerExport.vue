@@ -1,7 +1,7 @@
 <template>
   <section class="answer-export mt-5" aria-labelledby="answer-export-title">
     <h3 id="answer-export-title">回答結果のダウンロード</h3>
-    <p>このSurveyに届いた回答をCSVまたはJSONで保存します。時刻：{{ timezone }}</p>
+    <p>このSurveyに届いた回答を、旧形式の保存分も含めてCSVまたはJSONで保存します。時刻：{{ timezone }}</p>
     <label for="export-scope">ダウンロードする対象</label>
     <select id="export-scope" class="form-control export-scope" v-model="scope" :disabled="busy" @change="changeScope">
       <option value="all">全員・全期間の回答を一括ダウンロード</option>
@@ -26,7 +26,7 @@
           <option v-for="size in [10,20,50,100]" :key="size" :value="size">{{ size }}件</option>
         </select>
         <button type="button" :disabled="busy || loading || page === 1" @click="loadPage(page - 1)">前へ</button>
-        <span>{{ page }} ページ</span>
+        <span>{{ page }} ページ（回答合計 {{ total }} 件）</span>
         <button type="button" :disabled="busy || loading || !hasMore" @click="loadPage(page + 1)">次へ</button>
       </div>
       <p v-if="loading" role="status">回答一覧を読み込み中です…</p>
@@ -52,24 +52,25 @@
       <p class="text-muted">一度に選択できる回答は1,000件までです。</p>
     </div>
 
-    <p v-if="scope !== 'selected'" class="text-muted mt-3">一度に出力できる回答は10,000件までです。超える場合は期間を分けてください。</p>
+    <p v-if="scope !== 'selected'" class="text-muted mt-3">出力データが大きい場合は、期間を分けてダウンロードしてください。</p>
     <p v-if="error" role="alert">{{ error }}</p>
     <div class="mt-3">
-      <button type="button" class="btn btn-primary mr-2" :disabled="busy || !canExport" @click="generate('csv')">CSVを作成</button>
-      <button type="button" class="btn btn-outline-primary" :disabled="busy || !canExport" @click="generate('json')">JSONを作成</button>
+      <button type="button" class="btn btn-primary mr-2" :disabled="busy || !canExport" @click="generate('csv')">CSVをダウンロード</button>
+      <button type="button" class="btn btn-outline-primary" :disabled="busy || !canExport" @click="generate('json')">JSONをダウンロード</button>
     </div>
     <div v-if="busy" class="export-status mt-3" role="status" aria-live="polite" aria-busy="true">
       <span class="export-spinner" aria-hidden="true"></span>
       <span>ダウンロード用データを作成中です。このままお待ちください。</span>
     </div>
     <div v-if="downloadUrl && !busy" class="mt-3" role="status">
-      <p>{{ completedScope }}のデータを作成しました。</p>
+      <p>{{ completedScope }}のデータを作成しました。保存が始まらない場合は、下のボタンを押してください。</p>
       <a class="btn btn-success" :href="downloadUrl" :download="downloadName">{{ downloadFormat.toUpperCase() }}を保存</a>
     </div>
   </section>
 </template>
 
 <script>
+import download from "downloadjs";
 import SurveyDataService from "../services/SurveyDataService";
 import moment, {timeSettings} from "../utils/projectTime";
 
@@ -78,7 +79,7 @@ export default {
   data() {
     return { scope: "all", from: "", to: "", page: 1, pageSize: 50, hasMore: false, items: [],
       selectedIds: [], loading: false, listError: "", error: "", busy: false, requestId: 0,
-      downloadUrl: null, downloadFormat: "", downloadName: "", completedScope: "", disposed: false };
+      total: 0, downloadUrl: null, downloadFormat: "", downloadName: "", completedScope: "", disposed: false };
   },
   computed: {
     timezone() { return timeSettings.timezone; },
@@ -115,7 +116,7 @@ export default {
       try {
         const response = await SurveyDataService.getResultsPage(this.surveyId, { page, limit: this.pageSize });
         if (requestId !== this.requestId || this.disposed) return;
-        this.items = response.data.items; this.hasMore = response.data.hasMore; this.page = page;
+        this.total = response.data.total; this.items = response.data.items; this.hasMore = response.data.hasMore; this.page = page;
       } catch (e) { if (requestId === this.requestId && !this.disposed) { this.items = []; this.listError = "回答一覧を取得できませんでした。"; } }
       finally { if (requestId === this.requestId && !this.disposed) this.loading = false; }
     },
@@ -138,9 +139,11 @@ export default {
         if (this.disposed) return;
         const empty = format === "csv" ? !response.data : response.data.length === 0;
         if (empty) { this.error = "対象の回答がありません。条件を変更してください。"; return; }
-        this.downloadUrl = URL.createObjectURL(new Blob([format === "csv" ? response.data : JSON.stringify(response.data)],
-          { type: format === "csv" ? "text/csv;charset=utf-8" : "application/json" }));
+        const blob = new Blob([format === "csv" ? response.data : JSON.stringify(response.data)],
+          { type: format === "csv" ? "text/csv;charset=utf-8" : "application/json" });
+        this.downloadUrl = URL.createObjectURL(blob);
         this.downloadFormat = format; this.downloadName = this.surveyName + "_results." + format; this.completedScope = label;
+        download(blob, this.downloadName, blob.type);
       } catch (e) {
         const status = e.response && e.response.status;
         this.error = status === 413 ? "出力データの容量または列数が上限を超えています。期間を分けて出力してください。" :

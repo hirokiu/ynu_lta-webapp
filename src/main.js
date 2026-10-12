@@ -7,8 +7,6 @@ import store from "./store";
 
 Vue.config.productionTip = false
 
-Vue.use(require("moment")); // TODO try removing this line (https://stackoverflow.com/a/53892036/237509)
-
 import { firebaseConfig } from "./firebaseConfig";
 
 firebase.initializeApp(firebaseConfig);
