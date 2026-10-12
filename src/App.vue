@@ -1,9 +1,9 @@
 <template>
-  <div id="app">
+  <div id="app" :style="{'--navigation-height': navigationHeight + 'px'}">
     <div v-if="isPreview" role="status" class="alert alert-warning mb-0 text-center">
       開発用環境です。Protoとはデータ・アカウントが異なります。
     </div>
-    <nav v-if="$store.state.user.data && !['/register', '/account', '/reset-password'].includes($route.path)" class="navbar navbar-expand navbar-dark bg-dark project-navigation" aria-label="管理メニュー">
+    <nav ref="navigation" v-if="$store.state.user.data && !['/register', '/account', '/reset-password'].includes($route.path)" class="navbar navbar-expand navbar-dark bg-dark project-navigation" aria-label="管理メニュー">
       <a href="/surveys" class="navbar-brand">KIROKUN</a>
       <div class="navbar-nav mr-auto" style="flex-wrap: wrap">
         <li class="nav-item">
@@ -32,6 +32,9 @@
 
     <div class="container">
       <router-view />
+      <div class="page-bottom-actions">
+        <button type="button" class="btn btn-outline-secondary" @click="scrollToTop" aria-label="ページのトップへスクロール">↑ トップへ</button>
+      </div>
     </div>
   </div>
 </template>
@@ -40,9 +43,27 @@
 import {formatProjectTime, timeSettings} from "./utils/projectTime";
 export default {
   name: "app",
-  data: () => ({now: new Date(), clockTimer: null}),
-  mounted() { this.clockTimer = setInterval(() => { this.now = new Date(); }, 1000); },
-  beforeDestroy() { clearInterval(this.clockTimer); },
+  data: () => ({now: new Date(), clockTimer: null, navigationHeight: 0, navigationObserver: null}),
+  mounted() {
+    this.clockTimer = setInterval(() => { this.now = new Date(); }, 1000);
+    this.observeNavigation();
+  },
+  updated() { this.observeNavigation(); },
+  beforeDestroy() { clearInterval(this.clockTimer); if (this.navigationObserver) this.navigationObserver.disconnect(); },
+  methods: {
+    scrollToTop() { window.scrollTo({top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'}); },
+    observeNavigation() {
+      const navigation = this.$refs.navigation;
+      if (navigation === this.observedNavigation) return;
+      if (this.navigationObserver) this.navigationObserver.disconnect();
+      this.observedNavigation = navigation;
+      this.navigationHeight = navigation ? navigation.getBoundingClientRect().height : 0;
+      if (navigation) {
+        this.navigationObserver = new ResizeObserver(() => { this.navigationHeight = navigation.getBoundingClientRect().height; });
+        this.navigationObserver.observe(navigation);
+      }
+    }
+  },
   computed: {
     timezone() { return timeSettings.timezone; },
     clock() { return formatProjectTime(this.now); },
@@ -63,7 +84,8 @@ export default {
 };
 </script>
 <style scoped>
-.project-navigation { flex-wrap: wrap; }
+.project-navigation { flex-wrap: wrap; position: sticky; top: 0; z-index: 1020; }
+.page-bottom-actions { display: flex; justify-content: flex-end; padding: 1.5rem 0 2rem; }
 .nav-status { margin-left: auto; display: flex; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap: 0.6rem; color: #fff; font-size: 0.875rem; padding: 0.5rem 0; }
 .nav-status time { white-space: nowrap; font-variant-numeric: tabular-nums; }
 
@@ -100,9 +122,9 @@ export default {
 .preview-table > .table { table-layout: fixed; }
 .list-preview {
   position: sticky;
-  top: 1rem;
-  max-height: calc(100vh - 2rem);
-  max-height: calc(100dvh - 2rem);
+  top: calc(var(--navigation-height, 0px) + 1rem);
+  max-height: calc(100vh - var(--navigation-height, 0px) - 2rem);
+  max-height: calc(100dvh - var(--navigation-height, 0px) - 2rem);
   overflow: auto;
   overflow-wrap: anywhere;
   background: #fff;

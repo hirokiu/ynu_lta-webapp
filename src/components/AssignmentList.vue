@@ -16,6 +16,10 @@
       </div>
     </div>
 
+    <button type="button" class="btn btn-outline-secondary mb-3" :aria-expanded="filtersOpen ? 'true' : 'false'" aria-controls="assignment-filter-panel" @click="filtersOpen = !filtersOpen">
+      条件で絞り込む {{ filtersOpen ? '▲ 閉じる' : '▼ 開く' }}
+    </button>
+    <div id="assignment-filter-panel" v-show="filtersOpen">
     <fieldset class="assignment-filters">
       <legend>条件で絞り込む</legend>
       <label>Survey名<input class="form-control" v-model="surveyName" @keyup.enter="search" /></label>
@@ -35,6 +39,8 @@
       <datetime class="ml-2 mr-2" format="YYYY-MM-DD" width="316px" v-model="filterFrom" @input="retrieveAssignments"></datetime>
       <label>To:</label>
       <datetime class="ml-2 mr-2" format="YYYY-MM-DD" width="316px" v-model="filterTo" @input="retrieveAssignments"></datetime>
+    </div>
+
     </div>
 
     <p v-if="loadError" role="alert">{{ loadError }}</p>
@@ -159,6 +165,7 @@ export default {
   },
   data() {
     return {
+      filtersOpen: false,
       assignments: [],
       total: null, page: 1, pageSize: 50, hasMore: false, loading: false, loadError: "", requestId: 0,
       currentIndex: -1,
