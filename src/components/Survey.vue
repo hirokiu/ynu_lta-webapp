@@ -147,6 +147,7 @@
         Assignments
       </h3>
 
+      <list-pagination position="上" label="配信一覧ページ操作" size-label="配信一覧の表示件数" :page="assignmentPage" :page-size="assignmentPageSize" :has-more="assignmentsHasMore" :disabled="assignmentsLoading" @page-change="getAssignmentsOfSurvey(undefined, $event)" @size-change="assignmentPageSize = $event; getAssignmentsOfSurvey(undefined, 1)" />
       <list-range label="配信一覧（個人・グループ合計）：" :total="assignmentsTotal" :count="assignments.length" :page="assignmentPage" :page-size="assignmentPageSize" :loading="assignmentsLoading" :error="assignmentsError" />
       <h4 class="mt-5">
         <img class="mb-1 mr-1" src="/assets/img/person.svg" width="24" height="24" />
@@ -245,17 +246,8 @@
 
 
       <list-range label="配信一覧（個人・グループ合計）：" :total="assignmentsTotal" :count="assignments.length" :page="assignmentPage" :page-size="assignmentPageSize" :loading="assignmentsLoading" :error="assignmentsError" />
-      <div class="mt-4">
-        <label class="mr-2">配信一覧の表示件数
-          <select v-model.number="assignmentPageSize" :disabled="assignmentsLoading" @change="getAssignmentsOfSurvey(undefined, 1)">
-            <option v-for="size in [10,20,50,100]" :key="size" :value="size">{{ size }}件</option>
-          </select>
-        </label>
-        <p v-if="assignmentsError" role="alert">{{ assignmentsError }}</p>
-        <button :disabled="assignmentsLoading || assignmentPage === 1" @click="getAssignmentsOfSurvey(undefined, assignmentPage - 1)">配信一覧：前へ</button>
-        <span class="m-2">{{ assignmentPage }} ページ（個人・グループ合計で最大{{ assignmentPageSize }}件）</span>
-        <button :disabled="assignmentsLoading || !assignmentsHasMore" @click="getAssignmentsOfSurvey(undefined, assignmentPage + 1)">次へ</button>
-      </div>
+      <p v-if="assignmentsError" role="alert">{{ assignmentsError }}</p>
+      <list-pagination position="下" label="配信一覧ページ操作" size-label="配信一覧の表示件数" :page="assignmentPage" :page-size="assignmentPageSize" :has-more="assignmentsHasMore" :disabled="assignmentsLoading" @page-change="getAssignmentsOfSurvey(undefined, $event)" @size-change="assignmentPageSize = $event; getAssignmentsOfSurvey(undefined, 1)" />
       <answer-export v-if="currentSurvey._id" :key="currentSurvey._id" :survey-id="currentSurvey._id" :survey-name="currentSurvey.name" />
       <details class="mt-4">
         <summary>旧形式の個別配信データ（互換用）</summary>
@@ -335,6 +327,7 @@
 </template>
 
 <script>
+import ListPagination from "./ListPagination";
 import ListRange from "./ListRange";
 import moment, {timeSettings} from "../utils/projectTime";
 import { surveyTemplate, surveyStructureErrors } from "../utils/surveyTemplate";
@@ -353,6 +346,7 @@ import trDetail from "./table/tr/trDetail";
 
 export default {
   components: {
+    ListPagination,
     ListRange,
     AnswerExport,
     datetime,

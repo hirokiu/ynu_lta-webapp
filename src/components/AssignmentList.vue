@@ -30,16 +30,7 @@
     <p v-if="loadError" role="alert">{{ loadError }}</p>
     <p v-if="loading">読み込み中…</p>
     <p v-if="!loading && !loadError && !assignments.length">条件に一致する配信はありません。期間や検索条件を確認してください。</p>
-    <div>
-      <label class="mr-2">1ページの表示件数
-        <select v-model.number="pageSize" :disabled="loading" @change="loadPage(1)">
-          <option v-for="size in [10,20,50,100]" :key="size" :value="size">{{ size }}件</option>
-        </select>
-      </label>
-      <button :disabled="loading || page === 1" @click="loadPage(page - 1)">前へ</button>
-      <span class="m-2">{{ page }} ページ（最大{{ pageSize }}件）</span>
-      <button :disabled="loading || !hasMore" @click="loadPage(page + 1)">次へ</button>
-    </div>
+    <list-pagination position="上" :page="page" :page-size="pageSize" :has-more="hasMore" :disabled="loading" @page-change="loadPage" @size-change="pageSize = $event; loadPage(1)"></list-pagination>
     <div class="list row mt-4">
       <div class="col-md-4">
         <list-range :total="total" :count="assignments.length" :page="page" :page-size="pageSize" :loading="loading" :error="loadError" />
@@ -92,6 +83,7 @@
           </tbody>
         </table>
         <list-range :total="total" :count="assignments.length" :page="page" :page-size="pageSize" :loading="loading" :error="loadError" />
+        <list-pagination position="下" :page="page" :page-size="pageSize" :has-more="hasMore" :disabled="loading" @page-change="loadPage" @size-change="pageSize = $event; loadPage(1)"></list-pagination>
       </div>
 
       <div class="col-md-2 ml-4">
@@ -131,6 +123,7 @@
 </template>
 
 <script>
+import ListPagination from "./ListPagination";
 import ListRange from "./ListRange";
 import AssignmentDataService from "../services/AssignmentDataService";
 
@@ -145,6 +138,7 @@ import trDetail from "./table/tr/trDetail";
 export default {
   name: "assignment-list",
   components: {
+    ListPagination,
     ListRange,
     datetime,
     tdAssignmentNameLink,

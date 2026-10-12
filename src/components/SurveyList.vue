@@ -13,16 +13,7 @@
 
     <p v-if="loadError" role="alert">{{ loadError }}</p>
     <p v-if="loading">読み込み中…</p>
-    <div>
-      <label class="mr-2">1ページの表示件数
-        <select v-model.number="pageSize" :disabled="loading" @change="loadPage(1)">
-          <option v-for="size in [10,20,50,100]" :key="size" :value="size">{{ size }}件</option>
-        </select>
-      </label>
-      <button :disabled="loading || page === 1" @click="loadPage(page - 1)">前へ</button>
-      <span class="m-2">{{ page }} ページ（最大{{ pageSize }}件）</span>
-      <button :disabled="loading || !hasMore" @click="loadPage(page + 1)">次へ</button>
-    </div>
+    <list-pagination position="上" :page="page" :page-size="pageSize" :has-more="hasMore" :disabled="loading" @page-change="loadPage" @size-change="pageSize = $event; loadPage(1)"><router-link class="btn btn-sm btn-outline-primary" to="/addSurvey">Add Survey</router-link></list-pagination>
     <div class="list preview-layout mt-4" :class="{'has-preview': currentSurvey && currentSurvey._id}">
       <div class="preview-table">
         <list-range :total="total" :count="surveys.length" :page="page" :page-size="pageSize" :loading="loading" :error="loadError" />
@@ -51,14 +42,9 @@
           </tbody>
         </table>
         <list-range :total="total" :count="surveys.length" :page="page" :page-size="pageSize" :loading="loading" :error="loadError" />
+        <list-pagination position="下" :page="page" :page-size="pageSize" :has-more="hasMore" :disabled="loading" @page-change="loadPage" @size-change="pageSize = $event; loadPage(1)"><router-link class="btn btn-sm btn-outline-primary" to="/addSurvey">Add Survey</router-link></list-pagination>
 
-        <table class="table">
-          <tr>
-            <td>
-              <a :href="'/addSurvey'">Add Survey</a>
-            </td>
-          </tr>
-        </table>
+
       </div>
 
       <div class="preview-column">
@@ -82,6 +68,7 @@
 </template>
 
 <script>
+import ListPagination from "./ListPagination";
 import ListRange from "./ListRange";
 import moment from "../utils/projectTime";
 
@@ -95,6 +82,7 @@ import trDetail from "./table/tr/trDetail";
 export default {
   name: "survey-list",
   components: {
+    ListPagination,
     ListRange,
     tdSurveyNameLink,
     hLargeIconHeader,

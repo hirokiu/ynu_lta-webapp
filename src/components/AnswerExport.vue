@@ -20,15 +20,7 @@
 
     <div v-if="scope === 'selected'" class="mt-3">
       <p>回答一覧で保存したい回答にチェックしてください。ページを移動しても選択は保持されます。</p>
-      <div class="answer-controls">
-        <label for="answer-page-size">回答一覧の表示件数</label>
-        <select id="answer-page-size" v-model.number="pageSize" :disabled="busy || loading" @change="loadPage(1)">
-          <option v-for="size in [10,20,50,100]" :key="size" :value="size">{{ size }}件</option>
-        </select>
-        <button type="button" :disabled="busy || loading || page === 1" @click="loadPage(page - 1)">前へ</button>
-        <span>{{ page }} ページ（回答合計 {{ total }} 件）</span>
-        <button type="button" :disabled="busy || loading || !hasMore" @click="loadPage(page + 1)">次へ</button>
-      </div>
+      <list-pagination position="上" label="回答一覧ページ操作" size-label="回答一覧の表示件数" :page="page" :page-size="pageSize" :has-more="hasMore" :disabled="busy || loading" @page-change="loadPage" @size-change="pageSize = $event; loadPage(1)" />
       <p v-if="loading" role="status">回答一覧を読み込み中です…</p>
       <p v-if="listError" role="alert">{{ listError }} <button type="button" :disabled="loading" @click="loadPage(page)">再試行</button></p>
       <p>選択中：{{ selectedIds.length }}件
@@ -51,6 +43,7 @@
         </table>
       </div>
       <list-range :total="total" :count="items.length" :page="page" :page-size="pageSize" :loading="loading" :error="listError" />
+      <list-pagination position="下" label="回答一覧ページ操作" size-label="回答一覧の表示件数" :page="page" :page-size="pageSize" :has-more="hasMore" :disabled="busy || loading" @page-change="loadPage" @size-change="pageSize = $event; loadPage(1)" />
       <p class="text-muted">一度に選択できる回答は1,000件までです。</p>
     </div>
 
@@ -72,13 +65,14 @@
 </template>
 
 <script>
+import ListPagination from "./ListPagination";
 import ListRange from "./ListRange";
 import download from "downloadjs";
 import SurveyDataService from "../services/SurveyDataService";
 import moment, {timeSettings} from "../utils/projectTime";
 
 export default {
-  components: { ListRange },
+  components: { ListRange, ListPagination },
   props: { surveyId: { type: String, required: true }, surveyName: { type: String, default: "survey" } },
   data() {
     return { scope: "all", from: "", to: "", page: 1, pageSize: 50, hasMore: false, items: [],

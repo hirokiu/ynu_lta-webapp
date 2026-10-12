@@ -54,6 +54,7 @@
           </tbody>
         </table>
         <list-range :total="users.length" :count="users.length" :loading="loading" :error="loadError" />
+        <router-link v-if="usernameAccountsEnabled" to="/account-invite" class="btn btn-primary my-3">回答者を招待</router-link>
       </div>
 
       <div class="preview-column">

@@ -19,6 +19,7 @@
     <p v-if="loadError" role="alert">{{ loadError }}</p>
     <div class="list preview-layout mt-4" :class="{'has-preview': currentGroup}">
       <div class="preview-table">
+        <div class="my-3"><router-link class="btn btn-sm btn-outline-primary" to="/addGroup">Add Group</router-link></div>
         <list-range :total="groups.length" :count="groups.length" :loading="loading" :error="loadError" />
         <table class="table table-hover">
           <thead class="thead-light">
@@ -45,6 +46,7 @@
           </tbody>
         </table>
         <list-range :total="groups.length" :count="groups.length" :loading="loading" :error="loadError" />
+        <div class="my-3"><router-link class="btn btn-sm btn-outline-primary" to="/addGroup">Add Group</router-link></div>
       </div>
 
       <div class="preview-column">
@@ -64,13 +66,7 @@
       </div>
     </div>
 
-    <table class="table">
-      <tr>
-        <td>
-          <a :href="'/addGroup'">Add Group</a>
-        </td>
-      </tr>
-    </table>
+
   </div>
 </template>
 
