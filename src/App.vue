@@ -85,7 +85,20 @@ export default {
 </script>
 <style scoped>
 .project-navigation { flex-wrap: wrap; position: sticky; top: 0; z-index: 1020; }
-.page-bottom-actions { display: flex; justify-content: flex-end; padding: 1.5rem 0 2rem; }
+.page-bottom-actions {
+  position: fixed;
+  bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1030;
+}
+.page-bottom-actions button {
+  white-space: nowrap;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+}
+.page-bottom-actions button:hover { background: #6c757d; }
+.container { padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px)); }
 .nav-status { margin-left: auto; display: flex; justify-content: flex-end; align-items: center; flex-wrap: wrap; gap: 0.6rem; color: #fff; font-size: 0.875rem; padding: 0.5rem 0; }
 .nav-status time { white-space: nowrap; font-variant-numeric: tabular-nums; }
 
@@ -140,7 +153,7 @@ export default {
   .list-preview {
     position: fixed;
     top: auto;
-    bottom: 0.5rem;
+    bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
     left: 0.5rem;
     right: 0.5rem;
     max-height: 40vh;
