@@ -8,7 +8,7 @@
         <input
           type="text"
           class="form-control"
-          placeholder="Search by userId"
+          placeholder="ユーザー名で検索"
           v-model="searchInput"
         />
         <div class="input-group-append">
@@ -17,12 +17,12 @@
       </div>
     </div>
 
-    <div class="list row mt-4">
-      <div class="col-md-4">
+    <div class="list preview-layout mt-4" :class="{'has-preview': currentUser}">
+      <div class="preview-table">
         <table class="table table-hover">
           <thead class="thead-light">
             <tr>
-              <th style="width: 20%">userId</th>
+              <th style="width: 20%">ユーザー名</th>
               <th style="width: 30%">timezone</th>
               <th style="width: 20%" tooltip="deviceToken">
                 <img class="mb-1 mr-1" src="/assets/img/phone.svg" title="deviceToken"/>
@@ -40,7 +40,7 @@
               @dblclick="goToUser(user)"
             >
               <td class="td-wrap">
-                <tdUserNameLink :data="{user}"></tdUserNameLink>
+                <a :href="'/users/' + user.userId">{{ user.username || 'ユーザー名未設定' }}</a>
               </td>
               <td class="td-wrap">{{user.timezone}}</td>
               <td class="td-wrap code-detail">
@@ -53,16 +53,16 @@
         </table>
       </div>
 
-      <div class="col-md-2 ml-4">
-        <div v-if="currentUser">
+      <div class="preview-column">
+        <div v-if="currentUser" class="list-preview" role="region" aria-label="選択した項目のプレビュー" tabindex="0">
           <tableDetailsHeader
             icon="person"
-            :text="currentUser.userId"
+            :text="currentUser.username || 'ユーザー名未設定'"
             :href="'/users/' + currentUser.userId"
           />
 
           <table class="table">
-            <trDetail label="userId" :codeDetail="currentUser.userId" />
+            <trDetail label="ユーザー名" :text="currentUser.username || 'ユーザー名未設定'" />
             <trDetail label="timezone" :codeDetail="currentUser.timezone" />
             <trDetail label="deviceToken" :codeDetail="currentUser.deviceToken" />
             <trDetail label="os" :codeDetail="currentUser.os" />
@@ -81,7 +81,7 @@ import moment from "moment";
 
 import UserDataService from "../services/UserDataService";
 
-import tdUserNameLink from "./table/td/tdUserNameLink";
+
 import hLargeIconHeader from "./h/hLargeIconHeader";
 import tableDetailsHeader from "./table/tableDetailsHeader";
 import trDetail from "./table/tr/trDetail";
@@ -99,7 +99,6 @@ export default {
   }],
   name: "user-list",
   components: {
-    tdUserNameLink,
     hLargeIconHeader,
     tableDetailsHeader,
     trDetail

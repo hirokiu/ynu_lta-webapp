@@ -1,6 +1,6 @@
 <template>
   <div>
-    <hLargeIconHeader :text="user.userId" :icon="'person'"></hLargeIconHeader>
+    <hLargeIconHeader :text="user.username || 'ユーザー名未設定'" :icon="'person'"></hLargeIconHeader>
 
     <div class="row">
       <div class="col">
@@ -8,7 +8,8 @@
 
         <table class="table">
           <trDetail label="_id" :codeDetail="user._id" />
-          <trDetail label="userId" :text="user.userId" />
+          <trDetail label="ユーザー名" :text="user.username || 'ユーザー名未設定'" />
+          <trDetail label="内部ID（userId）" :text="user.userId" />
           <trDetail label="timezone" :text="user.timezone" />
           <trDetail label="deviceToken" :codeDetail="user.deviceToken" />
           <trDetail label="versionNumber" :codeDetail="user.versionNumber" />

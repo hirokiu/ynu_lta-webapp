@@ -71,3 +71,44 @@ export default {
   outline-offset: 2px;
 }
 </style>
+
+<style>
+.list.preview-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+  gap: 1.5rem;
+  width: 100%;
+  text-align: left;
+}
+.preview-table, .preview-column { min-width: 0; }
+.preview-table > .table { table-layout: fixed; }
+.list-preview {
+  position: sticky;
+  top: 1rem;
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
+  overflow: auto;
+  overflow-wrap: anywhere;
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 0.4rem;
+  padding: 1rem;
+}
+.list-preview .table { table-layout: fixed; margin-bottom: 0; }
+.list-preview:focus-visible { outline: 2px solid #ff6268; }
+@media (max-width: 767px) {
+  .list.preview-layout { grid-template-columns: minmax(0, 1fr); }
+  .list.preview-layout.has-preview { padding-bottom: 45vh; }
+  .list-preview {
+    position: fixed;
+    top: auto;
+    bottom: 0.5rem;
+    left: 0.5rem;
+    right: 0.5rem;
+    max-height: 40vh;
+    max-height: 40dvh;
+    z-index: 100;
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.15);
+  }
+}
+</style>
