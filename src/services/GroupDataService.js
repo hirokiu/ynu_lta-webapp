@@ -25,7 +25,7 @@ class GroupDataService {
   }
  
   findByGroupId(id) {
-    return http.get(`/groups/search/?t=${id}`);
+    return http.get("/groups", {params: {t: id}});
   }
 
   getGroupsOfUser(id) {
