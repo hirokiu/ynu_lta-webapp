@@ -7,6 +7,7 @@ http.interceptors.request.use(function (config) {
 });
 
 class AssignmentDataService {
+  getPage(params) { return http.get("/admin/assignments", { params }); }
   getAll() {
     return http.get("/assignments");
   }
