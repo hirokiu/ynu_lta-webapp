@@ -6,7 +6,7 @@ import axios from "axios";
 import router from './router'
 
 const API = axios.create({
-  baseURL: "http://ynu-lta.dev.alchembright.com/api",
+  baseURL: process.env.VUE_APP_API_BASE_URL || "/api",
 //   baseURL: "http://localhost:9001/api",
   // baseURL: "https://lta.ht.lu.se/api",
   // baseURL: "https://lta-staging.ht.lu.se/api",
@@ -20,8 +20,7 @@ const API = axios.create({
 API.interceptors.response.use(function (response) {
   return response
 }, function (error) {
-  console.log(error.response.data)
-  if (error.response.status === 401) {
+  if (error.response && error.response.status === 401) {
     // store.dispatch('logout')
     router.push('/login')
   }

@@ -23,6 +23,18 @@
       <datetime class="ml-2 mr-2" format="YYYY-MM-DD" width="316px" v-model="filterTo" @input="retrieveAssignments"></datetime>
     </div>
 
+    <p v-if="loadError" role="alert">{{ loadError }}</p>
+    <p v-if="loading">読み込み中…</p>
+    <div>
+      <label class="mr-2">1ページの表示件数
+        <select v-model.number="pageSize" :disabled="loading" @change="loadPage(1)">
+          <option v-for="size in [10,20,50,100]" :key="size" :value="size">{{ size }}件</option>
+        </select>
+      </label>
+      <button :disabled="loading || page === 1" @click="loadPage(page - 1)">前へ</button>
+      <span class="m-2">{{ page }} ページ（最大{{ pageSize }}件）</span>
+      <button :disabled="loading || !hasMore" @click="loadPage(page + 1)">次へ</button>
+    </div>
     <div class="list row mt-4">
       <div class="col-md-4">
         <table class="table table-hover">
@@ -135,6 +147,7 @@ export default {
   data() {
     return {
       assignments: [],
+      page: 1, pageSize: 50, hasMore: false, loading: false, loadError: "", requestId: 0,
       currentIndex: -1,
       currentAssignment: null,
       searchInput: "",
@@ -151,22 +164,19 @@ export default {
       if (!dt) return "";
       return moment(dt).calendar();
     },
-    retrieveAssignments() {
-      AssignmentDataService.getSortedAndFiltered(
-        "publishAt",
-        moment(this.filterFrom)
-          .startOf("day")
-          .unix(),
-        moment(this.filterTo)
-          .endOf("day")
-          .unix()
-      )
-        .then(response => {
-          this.assignments = response.data;
-        })
-        .catch(e => {
-          console.log(e);
-        });
+    retrieveAssignments() { this.loadPage(1); },
+    async loadPage(page) {
+      const requestId = ++this.requestId;
+      this.loading = true; this.loadError = "";
+      try {
+        const response = await AssignmentDataService.getPage({ page, limit: this.pageSize, t: this.searchInput,
+          from: moment(this.filterFrom).startOf("day").toISOString(),
+          to: moment(this.filterTo).endOf("day").toISOString() });
+        if (requestId !== this.requestId) return;
+        this.assignments = response.data.items; this.hasMore = response.data.hasMore; this.page = page;
+        this.currentAssignment = null; this.currentIndex = -1;
+      } catch (e) { if (requestId === this.requestId) this.loadError = "取得できませんでした。期間を確認して再試行してください。"; }
+      finally { if (requestId === this.requestId) this.loading = false; }
     },
 
     refreshList() {
@@ -182,16 +192,7 @@ export default {
       window.location.href = "/assignments/" + assignment._id;
     },
 
-    search() {
-      AssignmentDataService.search(this.searchInput)
-        .then(response => {
-          this.assignments = response.data;
-          this.setActive(null);
-        })
-        .catch(e => {
-          console.log(e);
-        });
-    },
+    search() { this.loadPage(1); },
     isToHappen(stamp) {
       return moment(stamp).isAfter(moment());
     }
