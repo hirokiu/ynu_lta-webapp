@@ -1,11 +1,14 @@
 const assert = require('assert');
 const fs = require('fs');
 const vm = require('vm');
-const moment = require('moment');
+const timezoneMoment = require('moment-timezone');
+const timeSettings = {timezone: 'Asia/Tokyo'};
+const moment = value => timezoneMoment.tz(value, timeSettings.timezone);
+moment.locale = timezoneMoment.locale;
 function component(file, services) {
  const source=fs.readFileSync(`src/components/${file}.vue`,'utf8').split('<script>')[1].split('</script>')[0];
  const imports=Array.from(source.matchAll(/^import (\w+) from .*;$/gm),m=>m[1]);
- const context={module:{exports:{}},moment,console,URL,Blob,...Object.fromEntries(imports.map(name=>[name,{}])),...services};
+ const context={module:{exports:{}},moment,timeSettings,console,URL:{createObjectURL:()=> 'blob:test',revokeObjectURL:()=>{}},Blob,...Object.fromEntries(imports.map(name=>[name,{}])),download:()=>{},...services};
  context.moment=moment;
  vm.runInNewContext(source.replace(/^import .*;$/gm,'').replace('export default','module.exports ='),context);
  const definition=context.module.exports;
@@ -21,8 +24,12 @@ function component(file, services) {
  calls[1].resolve({data:{items:[{_id:'new'}],hasMore:false}});await latest;
  calls[0].resolve({data:{items:[{_id:'old'}],hasMore:true}});await old;
  assert.equal(state.assignments[0]._id,'new');assert.equal(state.page,2);assert.equal(state.loading,false);
- assert.equal(calls[1].params.limit,50);assert(calls[1].params.from.endsWith('Z'));
- const failed=state.loadPage(3);calls[2].reject(Error('offline'));await failed;assert(state.loadError);assert.equal(state.loading,false);
+ assert.equal(calls[1].params.limit,50);assert(!('from' in calls[1].params));assert(!('to' in calls[1].params));
+ state.periodMode='period';state.filterFrom='2026-01-01';state.filterTo='2026-01-02';
+ const filtered=state.loadPage(1);
+ assert.equal(calls[2].params.from,'2025-12-31T15:00:00.000Z');assert.equal(calls[2].params.to,'2026-01-02T14:59:59.999Z');
+ calls[2].resolve({data:{items:[],hasMore:false}});await filtered;
+ const failed=state.loadPage(3);calls[3].reject(Error('offline'));await failed;assert(state.loadError);assert.equal(state.loading,false);
  const sizes=component('SurveyList',{SurveyDataService:{getPage:async params=>{assert.equal(params.limit,20);assert.equal(params.page,1);return {data:{items:[],hasMore:false}};}}});
  sizes.pageSize=20;await sizes.loadPage(1);assert.equal(sizes.page,1);
  const downloads=[];
@@ -40,7 +47,7 @@ function component(file, services) {
  answers.scope='all';answers.from='2026-01-01';answers.to='2026-01-02';answers.changeScope();assert.equal(answers.downloadUrl,null);
  const all=answers.generate('json');assert.deepStrictEqual(Object.keys(downloads[1].options).sort(),['format','scope']);
  downloads[1].resolve({data:[]});await all;assert(answers.error);assert.equal(answers.downloadUrl,null);
- answers.scope='period';const period=answers.generate('csv');assert.equal(downloads[2].options.from,'2026-01-01T00:00:00.000+09:00');assert.equal(downloads[2].options.to,'2026-01-02T23:59:59.999+09:00');
+ answers.scope='period';const period=answers.generate('csv');assert.equal(downloads[2].options.from,'2025-12-31T15:00:00.000Z');assert.equal(downloads[2].options.to,'2026-01-02T14:59:59.999Z');
  downloads[2].resolve({data:'csv'});await period;answers.clearDownload();
  answers.from='';await answers.generate('csv');assert(answers.error);assert.equal(downloads.length,3);
  const failing=component('AnswerExport',{SurveyDataService:{exportResults:async()=>{throw {response:{status:422}};}}});
