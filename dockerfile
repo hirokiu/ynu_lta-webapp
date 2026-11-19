@@ -10,7 +10,7 @@ ENV VUE_APP_FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID
 RUN node -e 'const c=JSON.parse(process.env.VUE_APP_FIREBASE_CONFIG); if(!c.apiKey || !c.appId || !c.authDomain || c.projectId!==process.env.VUE_APP_FIREBASE_PROJECT_ID) process.exit(1)'
 # Vue CLI 4 uses Webpack 4; temporary compatibility until the Vue upgrade.
 RUN NODE_OPTIONS=--openssl-legacy-provider npm run build
-FROM nginx:stable-alpine@sha256:dc5069ad14f19660b141b21236140b91656bf89bbc3e2417c70ae650cd66104c
+FROM nginx:1.30.7-alpine@sha256:bef154735288bc38d99fac41ae63730684bcc661503673a04a0f9bc526ba8598
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx_config/default.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
